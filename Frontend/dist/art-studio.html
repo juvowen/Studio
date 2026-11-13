@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#ffffff" />
+    <title>"ART STUDIO" – Studio</title>
+    <script type="module" crossorigin src="/assets/art-studio-B9zSfbyW.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-B5Qt9EMX.js">
+    <link rel="stylesheet" crossorigin href="/assets/runway-DPHiE7dY.css">
+  </head>
+  <body class="rw">
+    <header class="rw-top">
+      <a class="rw-back" href="./">← "STUDIO"</a>
+      <span>ART ARCHIVE</span>
+      <span class="rw-top-end">C/O ART INSTITUTE OF CHICAGO</span>
+    </header>
+
+    <main>
+      <section class="rw-hero rw-hero--long">
+        <h1>"ART STUDIO"</h1>
+        <p>PUBLIC DOMAIN. FOR VIEWING PURPOSES ONLY</p>
+      </section>
+
+      <form class="rw-menu rw-menu--art" aria-label="Choose an artist or a period" onsubmit="return false">
+        <label>
+          <span>01 / ARTIST <em class="art-lock" data-for="artist" hidden></em></span>
+          <select id="art-artist"></select>
+        </label>
+        <label>
+          <span>02 / PERIOD <em class="art-lock" data-for="period" hidden></em></span>
+          <select id="art-period">
+            <option value="">ALL PERIODS</option>
+          </select>
+        </label>
+        <label>
+          <span>03 / NYC EVENTS</span>
+          <select id="art-events">
+            <option value="">OFF</option>
+          </select>
+        </label>
+      </form>
+
+      <section class="rw-show" aria-labelledby="art-name">
+        <div class="rw-show-head">
+          <h2 id="art-name" class="rw-designer"></h2>
+          <p class="rw-details">
+            <span class="art-life"></span>
+            <span class="rw-count"></span>
+          </p>
+        </div>
+        <p class="rw-status" aria-live="polite"></p>
+        <div class="rw-grid art-grid"></div>
+        <div class="art-more-row">
+          <button class="art-more" type="button" hidden></button>
+        </div>
+      </section>
+    </main>
+
+    <dialog class="art-view" aria-labelledby="art-view-title">
+      <div class="art-view-bar">
+        <span class="art-view-index"></span>
+        <button class="art-view-close" type="button" aria-label="Close">CLOSE ×</button>
+      </div>
+      <div class="art-view-frame">
+        <img alt="" />
+      </div>
+      <div class="art-view-caption">
+        <h3 id="art-view-title"></h3>
+        <p class="art-view-meta"></p>
+        <a class="art-view-link" target="_blank" rel="noopener">VIEW AT THE ART INSTITUTE ↗</a>
+      </div>
+    </dialog>
+
+    <footer class="rw-foot">
+      <span>"IMAGES" C/O THE ART INSTITUTE OF CHICAGO — CC0 PUBLIC DOMAIN</span>
+      <span>"EVENTS" C/O NYC PARKS, NYC OPEN DATA</span>
+      <span>STUDIO</span>
+    </footer>
+
+  </body>
+</html>

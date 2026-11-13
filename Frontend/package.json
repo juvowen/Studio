@@ -1,0 +1,15 @@
+{
+  "name": "studio-frontend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/dev.js",
+    "build": "vite build",
+    "preview": "vite preview",
+    "dev:frontend": "vite"
+  },
+  "devDependencies": {
+    "vite": "^7.0.0"
+  }
+}
