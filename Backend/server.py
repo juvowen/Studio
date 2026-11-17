@@ -14,6 +14,8 @@ Nothing is downloaded ahead of time; pictures load straight from Vogue.
   GET /api/art/periods                    Art Studio periods with work counts
   GET /api/art/event-types                NYC art event types with counts (NYC Parks)
   GET /api/art/events?type=exhibitions    NYC art events of one type, or type=all
+                                          (gallery shows come from galleries.py)
+  GET /api/art/events/status              when galleries were last read, and how each went
   GET /api/art/works?artist=35809&page=1  one page of an artist's works
   GET /api/art/works?period=baroque       ...or of a period's works
   GET /api/art/image/<image id>           one artwork picture, fetched from the museum
@@ -38,6 +40,8 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 import requests
+
+import galleries
 
 HERE = Path(__file__).resolve().parent
 SCRAPER = HERE / "Vogue-Runway-Scraper"
@@ -296,7 +300,7 @@ EVENT_TYPES = [
     {"id": "kids", "name": "For Kids & Families",
      "title": r"best for kids|kids|family|families|tots|story time|children"},
 ]
-EVENT_TYPE_IDS = {"all"} | {kind["id"] for kind in EVENT_TYPES}
+EVENT_TYPE_IDS = {"all", "galleries", "chelsea", "opening", "discovered"} | {kind["id"] for kind in EVENT_TYPES}
 
 
 def refreshed_every(seconds):
@@ -366,14 +370,42 @@ def nyc_art_events():
     return sorted(events.values(), key=lambda event: event["dates"][0]["start"] or "")
 
 
+def parks_events():
+    try:
+        return [{**event, "source": "parks"} for event in nyc_art_events()]
+    except requests.RequestException:
+        return []
+
+
+def events_of(kind):
+    """Gallery shows first (closing soonest), then Google-found events, then Parks."""
+    shows = galleries.current_shows()
+    found = galleries.discovered_events()
+    parks = parks_events()
+    if kind == "all":
+        return shows + found + parks
+    if kind == "galleries":
+        return shows
+    if kind == "chelsea":
+        return [show for show in shows if show["area"] == "Chelsea"]
+    if kind == "opening":
+        return [show for show in shows if show["opening"]]
+    if kind == "discovered":
+        return found
+    return [event for event in parks if kind in event["types"]]
+
+
 def nyc_event_types():
-    events = nyc_art_events()
-    counts = [{"id": "all", "name": "All Art Events", "events": len(events)}]
-    for kind in EVENT_TYPES:
-        counts.append(
-            {"id": kind["id"], "name": kind["name"], "events": sum(kind["id"] in e["types"] for e in events)}
-        )
-    return counts
+    types = [
+        {"id": "all", "name": "All Art Events", "group": ""},
+        {"id": "galleries", "name": "Gallery Shows — All NYC", "group": "GALLERIES"},
+        {"id": "chelsea", "name": "Chelsea Galleries", "group": "GALLERIES"},
+        {"id": "opening", "name": "Opening Soon", "group": "GALLERIES"},
+    ]
+    if galleries.status()["serpapi"]:
+        types.append({"id": "discovered", "name": "Found on Google Events", "group": "DISCOVERED"})
+    types += [{"id": kind["id"], "name": kind["name"], "group": "NYC PARKS"} for kind in EVENT_TYPES]
+    return [{**kind, "events": len(events_of(kind["id"]))} for kind in types]
 
 
 class Handler(SimpleHTTPRequestHandler):
@@ -408,9 +440,9 @@ class Handler(SimpleHTTPRequestHandler):
             if url.path == "/api/art/event-types":
                 return self.send_json(nyc_event_types())
             if url.path == "/api/art/events" and query.get("type", "all") in EVENT_TYPE_IDS:
-                kind = query.get("type", "all")
-                events = nyc_art_events()
-                return self.send_json([e for e in events if kind == "all" or kind in e["types"]])
+                return self.send_json(events_of(query.get("type", "all")))
+            if url.path == "/api/art/events/status":
+                return self.send_json(galleries.status())
             if url.path == "/api/art/periods":
                 return self.send_json(art_periods())
             if url.path == "/api/art/works":
@@ -467,11 +499,13 @@ def warm_up():
         show_images(*DEFAULT)
         art_artists()
         art_periods()
+        nyc_art_events()
     except Exception as error:
         print(f"Warm-up skipped: {error}")
 
 
 if __name__ == "__main__":
     threading.Thread(target=warm_up, daemon=True).start()
+    galleries.start_background_refresh()
     print(f"Studio runway server on http://localhost:{PORT}", flush=True)
     Server(("::", PORT), Handler).serve_forever()

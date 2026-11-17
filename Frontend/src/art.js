@@ -3,7 +3,9 @@ import './runway.css'
 // Artworks come from the Art Institute of Chicago's public collection,
 // looked up by the backend (Backend/server.py, /api/art/...), which also
 // passes the pictures through. Only public-domain works with images are shown.
-// NYC art events come from the city's NYC Parks events feed (NYC Open Data).
+// NYC art events: gallery exhibitions read from the galleries' own websites
+// (Backend/galleries.py), optional Google Events results (SerpApi key), and the
+// city's NYC Parks events feed (NYC Open Data).
 //
 // Three menus, one active view: an artist, a period (locks the artist menu),
 // or NYC events (locks both).
@@ -56,8 +58,9 @@ function showHeading() {
 	if (current.kind === 'events') {
 		const type = eventTypes.get(current.id)
 		nameHeading.textContent = current.id === 'all' || !type ? '"NYC ART EVENTS"' : `"${type.name}"`
-		lifeLabel.textContent = 'NYC — NEXT 14 DAYS'
-		document.title = '"NYC ART EVENTS" – Studio'
+		lifeLabel.textContent =
+			type?.group === 'NYC PARKS' ? 'NYC PARKS — NEXT 14 DAYS' : type?.group === 'GALLERIES' ? 'ON VIEW NOW & OPENING SOON' : 'NYC — NOW & NEXT'
+		document.title = `${nameHeading.textContent} – Studio`
 		return
 	}
 	const entry = current.kind === 'artist' ? artists.get(current.id) : periods.get(current.id)
@@ -125,8 +128,8 @@ async function loadEvents(ticket) {
 	if (ticket !== latest) return
 	current.total = events.length
 	current.shown = events.length
-	status(events.length ? '' : 'NO ART EVENTS OF THIS KIND IN THE NEXT 14 DAYS.')
-	countLabel.textContent = events.length ? `${pad(events.length)} EVENTS` : ''
+	status(events.length ? '' : 'NOTHING LISTED HERE RIGHT NOW. GALLERY LISTINGS REFRESH EVERY FEW HOURS.')
+	countLabel.textContent = events.length ? `${pad(events.length)} ${events.length === 1 ? 'EVENT' : 'EVENTS'}` : ''
 	grid.replaceChildren(...events.map((event, index) => eventCard(event, index + 1)))
 }
 
@@ -143,6 +146,28 @@ function when(date) {
 	const day = dayFormat.format(start)
 	if (!date.end) return `${day}, ${timeFormat.format(start)}`
 	return `${day}, ${timeFormat.format(start)}–${timeFormat.format(parts(date.end))}`
+}
+
+// Gallery dates come as YYYY-MM-DD.
+function onDay(day) {
+	const [y, m, d] = day.split('-').map(Number)
+	return dayFormat.format(new Date(Date.UTC(y, m - 1, d)))
+}
+
+// One line saying when, for any kind of event.
+function whenLine(event) {
+	if (event.source === 'gallery') {
+		if (event.opening) return `OPENS ${onDay(event.start)} — THROUGH ${onDay(event.end)}`
+		return event.start ? `${onDay(event.start)} – ${onDay(event.end)}` : `THROUGH ${onDay(event.end)}`
+	}
+	if (event.source === 'discovered') return event.when || ''
+	return eventDates(event)
+}
+
+// The small label above a card's title.
+function placeLabel(event) {
+	if (event.source === 'gallery') return `${event.venue} — ${event.area}`
+	return event.borough ?? event.area ?? 'NYC'
 }
 
 function eventDates(event) {
@@ -175,23 +200,24 @@ function eventCard(event, number) {
 	} else {
 		const blank = document.createElement('div')
 		blank.className = 'art-event-blank'
-		blank.textContent = dayFormat.format(parts(event.dates[0].start))
+		blank.textContent = event.source === 'parks' ? dayFormat.format(parts(event.dates[0].start)) : event.venue || 'NYC'
 		link.append(blank)
 	}
 
 	const caption = document.createElement('figcaption')
 	const index = document.createElement('span')
 	index.className = 'art-index'
-	index.textContent = `${pad(number)} / ${event.borough ?? 'NYC'}`
+	index.textContent = `${pad(number)} / ${placeLabel(event)}`
 	const title = document.createElement('strong')
 	title.className = 'art-title'
 	title.textContent = `"${event.title}"`
 	const date = document.createElement('span')
 	date.className = 'art-when'
-	date.textContent = eventDates(event)
+	date.textContent = whenLine(event)
 	const place = document.createElement('span')
 	place.className = 'art-meta'
-	place.textContent = event.location || event.park
+	place.textContent = event.source === 'parks' ? event.location || event.park : event.source === 'discovered' ? event.venue : ''
+	if (event.opening) figure.classList.add('is-opening')
 	caption.append(index, title, date, place)
 
 	figure.append(link, caption)
@@ -199,18 +225,23 @@ function eventCard(event, number) {
 }
 
 function openEvent(event, number) {
-	viewerIndex.textContent = `${pad(number)} / ${pad(current.total)} — ${event.borough ?? 'NYC'}`
+	viewerIndex.textContent = `${pad(number)} / ${pad(current.total)} — ${placeLabel(event)}`
 	viewerTitle.textContent = `"${event.title}"`
-	const dates = event.dates.map(when)
-	viewerMeta.textContent = [
-		dates.length > 1 ? `${dates.length} DATES: ${dates.join(' / ')}` : dates[0],
-		event.location || event.park,
-		event.description,
-	]
-		.filter(Boolean)
-		.join(' — ')
+	if (event.source === 'parks') {
+		const dates = event.dates.map(when)
+		viewerMeta.textContent = [
+			dates.length > 1 ? `${dates.length} DATES: ${dates.join(' / ')}` : dates[0],
+			event.location || event.park,
+			event.description,
+		]
+			.filter(Boolean)
+			.join(' — ')
+	} else {
+		viewerMeta.textContent = [whenLine(event), event.venue, event.description].filter(Boolean).join(' — ')
+	}
 	viewerLink.href = event.link
-	viewerLink.textContent = 'VIEW ON NYC PARKS ↗'
+	viewerLink.textContent =
+		event.source === 'gallery' ? `VIEW AT ${event.venue.toUpperCase()} ↗` : event.source === 'discovered' ? 'VIEW EVENT ↗' : 'VIEW ON NYC PARKS ↗'
 	viewer.classList.add('is-event')
 	viewerImage.hidden = !event.image
 	if (event.image) {
@@ -358,10 +389,22 @@ api('periods')
 api('event-types')
 	.then((list) => {
 		eventTypes = new Map(list.map((type) => [type.id, type]))
-		eventsSelect.replaceChildren(
-			new Option('OFF', ''),
-			...list.map(({ id, name, events }) => new Option(`${name} (${events})`, id)),
-		)
+		// Options grouped under GALLERIES / DISCOVERED / NYC PARKS headings.
+		const groups = new Map()
+		const top = []
+		for (const { id, name, events, group } of list) {
+			const option = new Option(`${name} (${events})`, id)
+			if (!group) top.push(option)
+			else {
+				if (!groups.has(group)) {
+					const optgroup = document.createElement('optgroup')
+					optgroup.label = group
+					groups.set(group, optgroup)
+				}
+				groups.get(group).append(option)
+			}
+		}
+		eventsSelect.replaceChildren(new Option('OFF', ''), ...top, ...groups.values())
 		eventsSelect.value = current.kind === 'events' ? current.id : ''
 		if (current.kind === 'events') showHeading()
 	})

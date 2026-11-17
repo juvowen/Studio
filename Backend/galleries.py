@@ -65,9 +65,7 @@ GALLERIES = [
     {"name": "Ryan Lee", "url": "https://ryanleegallery.com/exhibitions", "area": "Chelsea", "nyc_only": True},
     {"name": "Anton Kern", "url": "https://www.antonkerngallery.com/exhibitions", "area": "Midtown", "nyc_only": True},
     {"name": "Nicola Vassell", "url": "https://nicolavassell.com/exhibitions", "area": "Chelsea", "nyc_only": True},
-    {"name": "Bortolami", "url": "https://www.bortolamigallery.com/exhibitions", "area": "Tribeca", "nyc_only": True},
-    {"name": "303 Gallery", "url": "https://www.303gallery.com/exhibitions", "area": "Chelsea", "nyc_only": True},
-    {"name": "Sikkema Malloy Jenkins", "url": "https://www.sikkemamalloyjenkins.com/exhibitions", "area": "Chelsea", "nyc_only": True},
+    {"name": "Bortolami", "url": "https://www.bortolamigallery.com/exhibitions", "area": "Tribeca"},
     {"name": "Miguel Abreu", "url": "https://www.miguelabreugallery.com/exhibitions", "area": "Lower East Side", "nyc_only": True},
     {"name": "Van Doren Waxter", "url": "https://www.vandorenwaxter.com/exhibitions", "area": "Upper East Side", "nyc_only": True},
     {"name": "Marian Goodman", "url": "https://www.mariangoodman.com/exhibitions", "area": "Midtown"},
@@ -196,18 +194,23 @@ def find_dates(text):
     return None
 
 
+META_TAG = re.compile(r"<meta\b[^>]{0,2000}>", re.I)
+
+
 def meta(page_html, name):
-    for pattern in (
-        r'<meta[^>]+(?:property|name)=["\']' + name + r'["\'][^>]*content=["\']([^"\']*)["\']',
-        r'<meta[^>]+content=["\']([^"\']*)["\'][^>]*(?:property|name)=["\']' + name + r'["\']',
-    ):
-        found = re.search(pattern, page_html, re.I)
-        if found:
-            return htmllib.unescape(found.group(1)).strip()
+    """A <meta> tag's content, e.g. og:title. Looks at one tag at a time, so a
+    large page can never make the search run long."""
+    wanted = re.compile(r"""(?:property|name)\s*=\s*["']""" + re.escape(name) + r"""["']""", re.I)
+    for tag in META_TAG.findall(page_html):
+        if wanted.search(tag):
+            found = re.search(r"""content\s*=\s*(?:"([^"]*)"|'([^']*)')""", tag, re.I)
+            if found:
+                return htmllib.unescape(found.group(1) if found.group(1) is not None else found.group(2)).strip()
     return None
 
 
 def page_text(page_html):
+    page_html = page_html[:600_000]  # very long pages: the show details are near the top
     page_html = re.sub(r"<(script|style|noscript|footer|nav)[^>]*>.*?</\1>", " ", page_html, flags=re.S | re.I)
     return re.sub(r"\s+", " ", htmllib.unescape(re.sub(r"<[^>]+>", " ", page_html)))
 
@@ -220,14 +223,23 @@ NEW_YORK_WORDS = re.compile(
 CITIES = r"new york|los angeles|london|paris|hong kong|seoul|tokyo|geneva|berlin|beijing|shanghai|brussels|monaco|aspen|palm beach|east hampton|basel|milan|rome|kinderhook|tribeca|chelsea|uptown"
 
 
+OTHER_CITY = re.compile(r"\b(los angeles|london|paris|hong kong|seoul|tokyo|geneva|berlin|beijing|shanghai|brussels|monaco|aspen|palm beach|east hampton|basel|milan|rome|kinderhook)\b", re.I)
+
+
 def clean_title(raw, gallery):
-    parts = re.split(r"\s+(?:\||«|»|—|–|-)\s+", raw or "")
+    parts = re.split(r"\s*(?:\||«|»)\s*|\s+(?:—|–|-)\s+", raw or "")
     keep = []
+    name = gallery.lower()
     for part in parts:
-        part = part.strip()
-        if not part or part.lower() in (gallery.lower(), "exhibitions", "exhibition", "gallery"):
+        part = part.strip(" -–—:")
+        low = part.lower()
+        if not part or low in ("exhibitions", "exhibition", "gallery", "current", "upcoming"):
             continue
-        if gallery.lower() in part.lower() or re.search(r"\b(19|20)\d\d\b.*\d|^" + MON + r"\s+\d", part, re.I):
+        # the gallery's own name ("Petzel Gallery", "Almine Rech"), but not a
+        # show title that merely mentions it ("Maison Leleu x Luhring Augustine")
+        if low == name or low in (f"{name} gallery", f"gallery {name}", f"{name} gallery new york"):
+            continue
+        if re.search(r"\b(19|20)\d\d\b.*\d|^" + MON + r"\s+\d", part, re.I) and len(keep):
             continue
         if re.fullmatch(r"(?:new york|" + CITIES + r")(?::.*)?", part, re.I) or part.lower().startswith("installation"):
             continue
@@ -255,8 +267,13 @@ def read_exhibition(url, gallery):
     nearby = text[max(0, at - 400): at + 400]
     if not gallery.get("nyc_only") and not NEW_YORK_WORDS.search(nearby):
         return None  # a show at one of the gallery's other cities
-    title = clean_title(meta(page.text, "og:title") or (re.search(r"<title>(.*?)</title>", page.text, re.S | re.I) or [None, ""])[1], gallery["name"])
-    if not title:
+    raw_title = meta(page.text, "og:title") or (re.search(r"<title>(.*?)</title>", page.text, re.S | re.I) or [None, ""])[1]
+    title = clean_title(raw_title, gallery["name"])
+    if not title or re.search(r"exhibitions$|^(new york|paris|london)\b", title, re.I):
+        return None  # a list page, not a show
+    if OTHER_CITY.search(raw_title or "") and not NEW_YORK_WORDS.search(raw_title or ""):
+        return None  # the title names another city
+    if re.search(r"\d+\s+chome|\btokyo\b|\bparis\b|\blondon\b|los angeles", title, re.I):
         return None
     description = meta(page.text, "og:description") or meta(page.text, "description") or ""
     return {

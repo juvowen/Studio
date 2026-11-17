@@ -391,6 +391,18 @@ body.rw {
   text-transform: uppercase;
 }
 
+/* A show that has not opened yet gets a black date line. */
+.art-event.is-opening .art-when {
+  justify-self: start;
+  padding: 1px 5px;
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.art-event .art-meta:empty {
+  display: none;
+}
+
 .art-view-frame img[hidden] {
   display: none;
 }
