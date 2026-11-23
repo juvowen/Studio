@@ -5,9 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#ffffff" />
     <title>"ART STUDIO" – Studio</title>
-    <script type="module" crossorigin src="/assets/art-studio-BNLNNN43.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-B5Qt9EMX.js">
-    <link rel="stylesheet" crossorigin href="/assets/runway-auPGoU8m.css">
+    <script type="module" crossorigin src="/assets/art-studio-DiTyPdOo.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/music-DvR08xni.js">
+    <link rel="stylesheet" crossorigin href="/assets/music-BVoPGAcx.css">
+    <link rel="stylesheet" crossorigin href="/assets/runway-BE-GrzGt.css">
   </head>
   <body class="rw">
     <header class="rw-top">
@@ -25,7 +26,20 @@
       <form class="rw-menu rw-menu--art" aria-label="Choose an artist or a period" onsubmit="return false">
         <label>
           <span>01 / ARTIST <em class="art-lock" data-for="artist" hidden></em></span>
-          <select id="art-artist"></select>
+          <div class="rw-search">
+            <input
+              id="art-artist"
+              type="text"
+              role="combobox"
+              aria-autocomplete="list"
+              aria-expanded="false"
+              aria-controls="art-artists"
+              autocomplete="off"
+              spellcheck="false"
+              placeholder="SEARCH ARTISTS"
+            />
+            <ul id="art-artists" class="rw-brands" role="listbox" aria-label="Artists" hidden></ul>
+          </div>
         </label>
         <label>
           <span>02 / PERIOD <em class="art-lock" data-for="period" hidden></em></span>
@@ -74,7 +88,7 @@
 
     <footer class="rw-foot">
       <span>"IMAGES" C/O THE ART INSTITUTE OF CHICAGO — CC0 PUBLIC DOMAIN</span>
-      <span>"EVENTS" C/O THE GALLERIES' OWN SITES & NYC PARKS</span>
+      <span>"EVENTS" C/O THE GALLERIES' & MUSEUMS' OWN SITES & NYC PARKS</span>
       <span>STUDIO</span>
     </footer>
 

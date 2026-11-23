@@ -71,6 +71,30 @@ GALLERIES = [
     {"name": "Marian Goodman", "url": "https://www.mariangoodman.com/exhibitions", "area": "Midtown"},
     {"name": "Gladstone", "url": "https://gladstonegallery.com/en/exhibitions/", "area": "Chelsea", "render": True},
 ]
+# Museums are read the same way. All are New York only, and their lists run
+# longer, so more exhibition pages are checked ("check").
+# Left out on purpose: MoMA, the Met, Brooklyn Museum and El Museo del Barrio
+# turn automated requests away; New Museum, the Morgan, Noguchi and Asia
+# Society disallow it in robots.txt.
+MUSEUMS = [
+    {"name": "Whitney Museum", "url": "https://whitney.org/exhibitions", "area": "Meatpacking District"},
+    {"name": "The Frick Collection", "url": "https://www.frick.org/exhibitions", "area": "Upper East Side"},
+    {"name": "Neue Galerie", "url": "https://www.neuegalerie.org/exhibitions", "area": "Upper East Side"},
+    {"name": "The Jewish Museum", "url": "https://thejewishmuseum.org/exhibitions", "area": "Upper East Side"},
+    {"name": "The Studio Museum in Harlem", "url": "https://studiomuseum.org/exhibitions", "area": "Harlem"},
+    {"name": "ICP", "url": "https://www.icp.org/exhibitions", "area": "Lower East Side"},
+    {"name": "Museum of Arts and Design", "url": "https://madmuseum.org/exhibitions", "area": "Columbus Circle"},
+    {"name": "The Bronx Museum", "url": "https://www.bronxmuseum.org/exhibitions", "area": "Bronx"},
+    {"name": "Museum of the City of New York", "url": "https://www.mcny.org/exhibitions", "area": "Upper East Side"},
+    {"name": "The Drawing Center", "url": "https://drawingcenter.org/exhibitions", "area": "SoHo"},
+    # Built in the browser: only read when FIRECRAWL_API_KEY is set.
+    {"name": "Guggenheim", "url": "https://www.guggenheim.org/exhibitions", "area": "Upper East Side", "render": True},
+    {"name": "Cooper Hewitt", "url": "https://www.cooperhewitt.org/exhibitions/", "area": "Upper East Side", "render": True},
+    {"name": "Queens Museum", "url": "https://queensmuseum.org/exhibitions/", "area": "Queens", "render": True},
+]
+for _museum in MUSEUMS:
+    _museum.update(kind="museum", nyc_only=True, check=16)
+
 CHECK_PER_GALLERY = 10  # exhibition pages looked at per gallery, newest first
 
 session = requests.Session()
@@ -128,7 +152,7 @@ LISTING_SKIP = re.compile(
 )
 
 
-def exhibition_links(listing_url, page):
+def exhibition_links(listing_url, page, limit=CHECK_PER_GALLERY):
     host = urlparse(page.url).netloc.removeprefix("www.")
     found = []
     for href in re.findall(r'href=["\']([^"\']+)["\']', page.text):
@@ -143,7 +167,7 @@ def exhibition_links(listing_url, page):
             continue
         if link.rstrip("/") not in {f.rstrip("/") for f in found}:
             found.append(link)
-    return found[:CHECK_PER_GALLERY]
+    return found[:limit]
 
 
 MONTHS = {m: i + 1 for i, m in enumerate("jan feb mar apr may jun jul aug sep oct nov dec".split())}
@@ -237,7 +261,7 @@ def clean_title(raw, gallery):
             continue
         # the gallery's own name ("Petzel Gallery", "Almine Rech"), but not a
         # show title that merely mentions it ("Maison Leleu x Luhring Augustine")
-        if low == name or low in (f"{name} gallery", f"gallery {name}", f"{name} gallery new york"):
+        if low.removeprefix("the ") == name.removeprefix("the ") or low in (f"{name} gallery", f"gallery {name}", f"{name} gallery new york"):
             continue
         if re.search(r"\b(19|20)\d\d\b.*\d|^" + MON + r"\s+\d", part, re.I) and len(keep):
             continue
@@ -279,6 +303,7 @@ def read_exhibition(url, gallery):
     return {
         "id": url,
         "source": "gallery",
+        "kind": gallery.get("kind", "gallery"),
         "title": htmllib.unescape(title),
         "venue": gallery["name"],
         "area": gallery["area"],
@@ -295,7 +320,7 @@ def read_gallery(gallery):
         return read_rendered_gallery(gallery)
     listing = fetch(gallery["url"])
     shows = []
-    for link in exhibition_links(gallery["url"], listing):
+    for link in exhibition_links(gallery["url"], listing, gallery.get("check", CHECK_PER_GALLERY)):
         time.sleep(PAUSE)
         try:
             show = read_exhibition(link, gallery)
@@ -341,7 +366,7 @@ def read_rendered_gallery(gallery):
             "url": gallery["url"],
             "formats": [{
                 "type": "json",
-                "prompt": "List the current and upcoming exhibitions on this gallery page.",
+                "prompt": f"List the current and upcoming exhibitions on this {gallery.get('kind', 'gallery')} page.",
                 "schema": FIRECRAWL_SCHEMA,
             }],
         },
@@ -364,6 +389,7 @@ def read_rendered_gallery(gallery):
         shows.append({
             "id": item.get("url") or f"{gallery['name']}:{item['title']}",
             "source": "gallery",
+            "kind": gallery.get("kind", "gallery"),
             "title": item["title"],
             "venue": gallery["name"],
             "area": gallery["area"],
@@ -441,7 +467,7 @@ def _age_hours(stamp):
 def refresh(force=False):
     if force or _age_hours(_state["checked"]) >= REFRESH_HOURS:
         shows, report = [], {}
-        for gallery in GALLERIES:
+        for gallery in GALLERIES + MUSEUMS:
             try:
                 found = read_gallery(gallery)
                 report[gallery["name"]] = len(found)

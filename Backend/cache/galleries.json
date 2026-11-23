@@ -61,18 +61,6 @@
    "description": "125 Newbury will present \u201cGottlieb/Rothko: The Surrealist Years,\u201d an exhibition of paintings and works on paper by two of the central protagonists of Abstract Expressionism: Mark Rothko and Adolph Gottlieb."
   },
   {
-   "id": "https://www.pacegallery.com/exhibitions/kylie-manning-the-mudlarkers/",
-   "source": "gallery",
-   "title": "Kylie Manning: The Mudlarkers",
-   "venue": "Pace",
-   "area": "Chelsea",
-   "start": "2026-10-13",
-   "end": "2026-11-14",
-   "image": "https://www.pacegallery.com/media/images/1029211keypSdp-LL8oCP9hHWXDmo7eA.2e16d0ba.fill-1200x630.webp",
-   "link": "https://www.pacegallery.com/exhibitions/kylie-manning-the-mudlarkers/",
-   "description": "Pace will present \u201cThe Mudlarkers,\u201d an exhibition of new paintings by New York-based artist Kylie Manning, at its London gallery from October 13 through November 14."
-  },
-  {
    "id": "https://www.davidzwirner.com/exhibitions/2026/yoshitomo-nara",
    "source": "gallery",
    "title": "Yoshitomo Nara",
@@ -358,7 +346,7 @@
    "end": "2026-12-24",
    "image": "https://cdn.sanity.io/images/a9d9nfpg/production/66cde183700b5da7483bd2ebb62cf3a139813920-4046x3237.jpg?auto=format&amp;fit=max&amp;q=90&amp;w=3200",
    "link": "https://www.lehmannmaupin.com/exhibitions/kim-yun-shin-in-the-continuum",
-   "description": "Lehmann Maupin Seoul is pleased to present In the Continuum by pioneering Korean artist Kim Yun Shin. Following her debut exhibitions in New York and London last year, this marks Kim\u2019s first solo exhibition with Lehmann Maupin Seoul since her return to the country after four decades of living and working across Argentina, Mexico, and other parts of the world. The exhibition follows Kim\u2019s landmark 2026 retrospective at the Hoam Museum of Art and garden project at Centre Pompidou Hanwha Seoul. Her growing international profile is further reflected in acquisitions by the Guggenheim Museum and Har"
+   "description": ""
   },
   {
    "id": "https://www.lehmannmaupin.com/exhibitions/lari-pittman-the-remedy-of-analog-space-and-time",
@@ -370,19 +358,7 @@
    "end": "2026-12-19",
    "image": "https://cdn.sanity.io/images/a9d9nfpg/production/df2d9c4d9fb74c12593b2bbc12176d805d5f3846-3500x2625.jpg?auto=format&amp;fit=max&amp;q=90&amp;w=3200",
    "link": "https://www.lehmannmaupin.com/exhibitions/lari-pittman-the-remedy-of-analog-space-and-time",
-   "description": "Lehmann Maupin is pleased to present Lari Pittman\u2019s solo exhibition The Remedy of Analog Space and Time, unveiling a new body of work by the Los Angeles-based painter featuring ten new paintings. Few living artists have shaped the language of contemporary painting as profoundly as Pittman. These paintings show Pittman further refining his distinctive visual language, which draws on a wide spectrum of historical and pop culture sources to create works that continue to offer new aesthetic and narrative possibilities. At a moment when questions of identity, craft, decoration, and the politics of "
-  },
-  {
-   "id": "https://www.lehmannmaupin.com/exhibitions/calida-rawles-parallax",
-   "source": "gallery",
-   "title": "Parallax",
-   "venue": "Lehmann Maupin",
-   "area": "Chelsea",
-   "start": "2026-10-15",
-   "end": "2026-11-14",
-   "image": "https://cdn.sanity.io/images/a9d9nfpg/production/ed2dacdad17bf1b1327ed2aff4bff30b5dcaeb0c-3430x4000.jpg?auto=format&amp;fit=crop&amp;fp-x=0.263&amp;fp-y=0.387&amp;h=1728&amp;q=90&amp;rect=399,388,2592,3166&amp;w=2592",
-   "link": "https://www.lehmannmaupin.com/exhibitions/calida-rawles-parallax",
-   "description": "In her latest exhibition of new paintings, Calida Rawles explores parallax: how changing our point of view can change the way we see the same moment. Known for merging hyperrealism with poetic abstraction, Rawles situates Black subjects within dynamic, fluid environments, using water as both a vital material and a historically charged space through which questions of identity, memory, healing, and belonging come into focus. This new exhibition centers on a series of three paintings based on photographs Rawles took of her youngest daughter in a pool. Captured within seconds of one another as Ra"
+   "description": ""
   },
   {
    "id": "https://www.lehmannmaupin.com/exhibitions/do-ho-suh-i-dream-in-another-language",
@@ -394,7 +370,7 @@
    "end": "2027-08-01",
    "image": "https://cdn.sanity.io/images/a9d9nfpg/production/c88c25a21f60262ae42877f9051a625c36e5cfd7-3000x2060.jpg?auto=format&amp;crop=entropy&amp;fit=crop&amp;h=2000&amp;q=90&amp;w=3000",
    "link": "https://www.lehmannmaupin.com/exhibitions/do-ho-suh-i-dream-in-another-language",
-   "description": "I dream in another language | Do Ho Suh will be the first major solo museum exhibition in New York dedicated to Korean artist Do Ho Suh (b. 1962, Seoul). Spanning more than three decades of the artist\u2019s practice, the presentation will include drawings, sculptures, and large-scale installations that intimately explore how we move through different places, carry memories, and build communities. Comprising more than 50 existing and new works, drawn from loans and works in the Guggenheim New York collection, the exhibition will trace Suh\u2019s investigation into the body and, by extension, architectur"
+   "description": ""
   },
   {
    "id": "https://www.lehmannmaupin.com/exhibitions/cecilia-vicuna-the-dream-of-water-quipu-of-encounters-maricunga",
@@ -841,126 +817,6 @@
    "description": "Jack Shainman Gallery has been dedicated from its inception to championing artists who have achieved mastery of their creative disciplines and are among the most compelling and influential contributors to culture today. For nearly four decades, the Gallery has earned a reputation for introducing international artists to American audiences, and for promoting and developing young and mid-career artists who have gone on to gain worldwide acclaim, presenting the first New York exhibitions of artists including Nick Cave, Hayv Kahraman, Meleko Mokgosi, Richard Mosse, Toyin Ojih Odutola, Hank Willis "
   },
   {
-   "id": "https://www.miandn.com/exhibitions/joanne-greenbaum",
-   "source": "gallery",
-   "title": "Joanne Greenbaum: Scaffold",
-   "venue": "Mitchell-Innes & Nash",
-   "area": "Chelsea",
-   "start": "2024-04-25",
-   "end": "2024-06-15",
-   "image": "https://s3.amazonaws.com/files.collageplatform.com.prod/application/63936142fcaaf75aef06bd82/812f66d59eddafef3d7ff602ddc9f38c.png",
-   "link": "https://www.miandn.com/exhibitions/joanne-greenbaum",
-   "description": "Mitchell-Innes & Nash is pleased to present our first solo exhibition with New York-based artist Joanne Greenbaum, Scaffold, on view from April 25 to June 15, 2024. The show will feature 8 new paintings including one of her largest works to date. Joanne Greenbaum\u2019s paintings consistently feature the layering of forms, both painting and drawing, in a pictorial space, thus creating uniquely intuitive compositions distinctly her own. As the artist recently stated: My work always has an underlying structure, and the paintings in particular consist of a scaffold system. I\u2019ve long been attracted to "
-  },
-  {
-   "id": "https://www.miandn.com/exhibitions/yirui-jia",
-   "source": "gallery",
-   "title": "Yirui Jia: Seasonist",
-   "venue": "Mitchell-Innes & Nash",
-   "area": "Chelsea",
-   "start": "2024-03-14",
-   "end": "2024-04-20",
-   "image": "https://s3.amazonaws.com/files.collageplatform.com.prod/application/63936142fcaaf75aef06bd82/812f66d59eddafef3d7ff602ddc9f38c.png",
-   "link": "https://www.miandn.com/exhibitions/yirui-jia",
-   "description": "Mitchell-Innes & Nash is pleased to present our first solo exhibition with Yirui Jia on view from March 14 to April 20, 2024. Featuring ten new paintings and one sculpture, the show will introduce prominent themes from the artist\u2019s surreal world through two new series: Bouquet Body and Emotional Flowers. Seasonist explores physical and psychological presence, change and impermanence through natural phenomena. Jia creates a new ensemble of fictionalized figures as they emerge from invented scenes surrounded by everyday objects, elements from nature and the changing of seasons. For the artist, e"
-  },
-  {
-   "id": "https://www.miandn.com/exhibitions/eddie-martinez4",
-   "source": "gallery",
-   "title": "Eddie Martinez: Wavelengths",
-   "venue": "Mitchell-Innes & Nash",
-   "area": "Chelsea",
-   "start": "2024-02-01",
-   "end": "2024-03-09",
-   "image": "https://s3.amazonaws.com/files.collageplatform.com.prod/application/63936142fcaaf75aef06bd82/812f66d59eddafef3d7ff602ddc9f38c.png",
-   "link": "https://www.miandn.com/exhibitions/eddie-martinez4",
-   "description": "Mitchell-Innes & Nash is pleased to announce our fifth solo exhibition with Brooklyn-based painter Eddie Martinez. Wavelengths will feature nine new paintings and will be on view from February 1 to March 9, 2024. Over the past two decades, Martinez has become known for his striking and energetic style of painting, part of an expansive practice that includes painted bronze sculptures, works on paper and printmaking. Deftly layering oil, acrylic and enamel paint, and employing an ever-evolving vocabulary of characters and symbols, Martinez has cultivated a style uniquely his own. Many of the new"
-  },
-  {
-   "id": "https://www.miandn.com/exhibitions/marcus-leslie-singleton",
-   "source": "gallery",
-   "title": "Marcus Leslie Singleton: Return from Exile",
-   "venue": "Mitchell-Innes & Nash",
-   "area": "Chelsea",
-   "start": "2023-12-14",
-   "end": "2024-01-27",
-   "image": "https://s3.amazonaws.com/files.collageplatform.com.prod/application/63936142fcaaf75aef06bd82/812f66d59eddafef3d7ff602ddc9f38c.png",
-   "link": "https://www.miandn.com/exhibitions/marcus-leslie-singleton",
-   "description": "Mitchell-Innes & Nash is pleased to feature new work by Marcus Leslie Singleton in his inaugural show with the gallery. On view from December 14, 2023 through January 27, 2024, Return from Exile showcases 10 new paintings, including the artist\u2019s largest paintings to date, and his first exhibited video. A deeply personal show, Return from Exile confronts issues of visibility, spirituality and the historical significance of everyday moments. \u201cWe are not bound by our histories. I don\u2019t believe we have to keep doing the same things we used to do under the umbrella of tradition,\u201d said Singleton. \u201cT"
-  },
-  {
-   "id": "https://www.miandn.com/exhibitions/keltie-ferris6",
-   "source": "gallery",
-   "title": "Keltie Ferris: dOUbTsWISHes",
-   "venue": "Mitchell-Innes & Nash",
-   "area": "Chelsea",
-   "start": "2023-10-26",
-   "end": "2023-12-09",
-   "image": "https://s3.amazonaws.com/files.collageplatform.com.prod/application/63936142fcaaf75aef06bd82/812f66d59eddafef3d7ff602ddc9f38c.png",
-   "link": "https://www.miandn.com/exhibitions/keltie-ferris6",
-   "description": "This fall, Mitchell-Innes & Nash presents its sixth solo exhibition of new work by Keltie Ferris. dOUbTsWISHes, on view from October 26 through December 9, 2023, features approximately ten new large-scale paintings, including a new series of body prints on canvas that are being exhibited for the first time. Over the past decade Ferris has become known for his unique, visually cacophonous style, in which dynamic layers are built up and removed with hand-held spray guns, palette knives and occasionally stencils and three-dimensional forms. In dOUbTsWISHes, Ferris mines his own visual vocabulary "
-  },
-  {
-   "id": "https://www.miandn.com/exhibitions/gerasimos-floratos2",
-   "source": "gallery",
-   "title": "Gerasimos Floratos: X-ing",
-   "venue": "Mitchell-Innes & Nash",
-   "area": "Chelsea",
-   "start": "2023-09-07",
-   "end": "2023-10-21",
-   "image": "https://s3.amazonaws.com/files.collageplatform.com.prod/application/63936142fcaaf75aef06bd82/812f66d59eddafef3d7ff602ddc9f38c.png",
-   "link": "https://www.miandn.com/exhibitions/gerasimos-floratos2",
-   "description": "Mitchell-Innes & Nash is pleased to announce X-ing, an exhibition of new work by Gerasimos Floratos (b. 1986, New York) that explores the notion of the individual within a collective experience. On view from September 7 through October 21, 2023, X-ing features approximately 10 new paintings in Floratos\u2019s expansive gestural style, which draws inspiration from diverse subjects ranging from the act of drawing, psychogeography, the phenomenon of synesthesia and art history. A lifelong New Yorker, living and working in Times Square, Floratos uses vignettes from his daily life to engage with the end"
-  },
-  {
-   "id": "https://www.miandn.com/exhibitions/worldmaking",
-   "source": "gallery",
-   "title": "Worldmaking: Co-curated by Gideon Appah & Ylinka Barotto",
-   "venue": "Mitchell-Innes & Nash",
-   "area": "Chelsea",
-   "start": "2023-07-13",
-   "end": "2023-08-25",
-   "image": "https://s3.amazonaws.com/files.collageplatform.com.prod/application/63936142fcaaf75aef06bd82/812f66d59eddafef3d7ff602ddc9f38c.png",
-   "link": "https://www.miandn.com/exhibitions/worldmaking",
-   "description": "This summer, Mitchell-Innes & Nash is pleased to present Worldmaking, a group exhibition of ten emerging artists living and working in Ghana, with many showing their work in New York for the first time. Encompassing significant new commissions and recent work spanning painting, sculpture, photography, video, and site-specific installation, the exhibition offers a glimpse into the vibrant art scene that characterizes Ghana today. Worldmaking features work by Hawa Ali Awanle Ayiboro, Dela Anyah, Rita Mawuena Benissan, Eric Gyamfi, Kelvin Haizel, Gideon Hanyame, Al Hassan Issah, Godelive Kasangat"
-  },
-  {
-   "id": "https://www.miandn.com/exhibitions/rafael-delacruz",
-   "source": "gallery",
-   "title": "Rafael Delacruz: Healing Finger Clean Drawings",
-   "venue": "Mitchell-Innes & Nash",
-   "area": "Chelsea",
-   "start": "2023-06-01",
-   "end": "2023-07-07",
-   "image": "https://s3.amazonaws.com/files.collageplatform.com.prod/application/63936142fcaaf75aef06bd82/812f66d59eddafef3d7ff602ddc9f38c.png",
-   "link": "https://www.miandn.com/exhibitions/rafael-delacruz",
-   "description": "Mitchell-Innes & Nash is pleased to announce its first solo exhibition for artist Rafael Delacruz (b. 1989). On view from June 1 through July 7, 2023, Rafael Delacruz: Healing Finger Clean Drawings will feature all new work, including approximately 12 new paintings and a video. - The artist Rafael Delacruz\u2019s mother visits Mexico each winter for New Year\u2019s. This past year, she brought back cochineal, a natural dye. Cochineal is a parasite, ruins cacti, and comes in little block-form pellets. If diluted properly, it can be mixed to make oil paint and various colors. Through a process of trial an"
-  },
-  {
-   "id": "https://www.miandn.com/exhibitions/jonathan-horowitz",
-   "source": "gallery",
-   "title": "Jonathan Horowitz: Human Nature",
-   "venue": "Mitchell-Innes & Nash",
-   "area": "Chelsea",
-   "start": "2023-04-20",
-   "end": "2023-05-26",
-   "image": "https://s3.amazonaws.com/files.collageplatform.com.prod/application/63936142fcaaf75aef06bd82/812f66d59eddafef3d7ff602ddc9f38c.png",
-   "link": "https://www.miandn.com/exhibitions/jonathan-horowitz",
-   "description": "Mitchell-Innes & Nash is pleased to announce Human Nature, an exhibition of new work by Jonathan Horowitz. Featuring video, painting, and lenticular photography, the show is the artist\u2019s first with the gallery and follows Horowitz\u2019s acclaimed exhibition at the Jewish Museum, New York, We Fight to Build a Free World: An Exhibition by Jonathan Horowitz (2020-21). \"Jonathan Horowitz&#39;s art speaks truth to power and illuminates the complexities of our cultural landscape with a sharp wit and uncompromising vision,\u201d said Lucy Mitchell-Innes. \u201cHe challenges the status quo and reshapes the way we s"
-  },
-  {
-   "id": "https://www.miandn.com/exhibitions/antonio-henrique-amaral-1",
-   "source": "gallery",
-   "title": "Antonio Henrique Amaral: O Discurso",
-   "venue": "Mitchell-Innes & Nash",
-   "area": "Chelsea",
-   "start": "2023-03-09",
-   "end": "2023-04-15",
-   "image": "https://s3.amazonaws.com/files.collageplatform.com.prod/application/63936142fcaaf75aef06bd82/812f66d59eddafef3d7ff602ddc9f38c.png",
-   "link": "https://www.miandn.com/exhibitions/antonio-henrique-amaral-1",
-   "description": "Mitchell-Innes & Nash is pleased to announce its first solo exhibition for Brazilian artist Antonio Henrique Amaral (1935-2015) since taking on representation of the artist\u2019s estate in 2022. Antonio Henrique Amaral: O Discurso will be on view in Chelsea from March 9 through April 15, 2023 and will feature 10 paintings ranging in date from the 1960s to the 1990s. It will be the largest concentration of the artist\u2019s work seen outside of South America since 1996. A pioneering figure in Brazilian and Latin American art, Amaral developed his signature style during the second half of the 20th centur"
-  },
-  {
    "id": "https://greenenaftaligallery.com/exhibitions/palace-of-desire",
    "source": "gallery",
    "title": "Palace of Desire",
@@ -975,7 +831,7 @@
   {
    "id": "https://greenenaftaligallery.com/exhibitions/lubaina-himid-low-key-shrines-french-paintings-and-german-ceramics",
    "source": "gallery",
-   "title": "Lubaina Himid: Low Key Shrines: French Paintings and German Ceramics",
+   "title": "Lubaina Himid: Low Key Shrines: French Paintings and German Ceramics 2026",
    "venue": "Greene Naftali",
    "area": "Chelsea",
    "start": null,
@@ -1826,23 +1682,23 @@
   }
  ],
  "discovered": [],
- "checked": "2026-11-14T00:35:34",
+ "checked": "2026-11-18T01:05:38",
  "discovered_at": null,
  "report": {
   "Almine Rech": 1,
-  "Pace": 5,
+  "Pace": 4,
   "David Zwirner": 2,
   "Matthew Marks": 3,
   "Paula Cooper": 10,
   "Sean Kelly": 8,
-  "Lehmann Maupin": 6,
+  "Lehmann Maupin": 5,
   "Marianne Boesky": 2,
   "Petzel": 10,
   "Tanya Bonakdar": 10,
   "Luhring Augustine": 2,
   "Andrew Kreps": 10,
   "Jack Shainman": 1,
-  "Mitchell-Innes & Nash": 10,
+  "Mitchell-Innes & Nash": "error: HTTPSConnectionPool(host='www.miandn.com', port=443): Read timed out.",
   "Greene Naftali": 10,
   "James Cohan": 1,
   "Galerie Lelong": 7,

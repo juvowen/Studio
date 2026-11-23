@@ -1,9 +1,10 @@
 import './runway.css'
+import './music.js'
 
 // Artworks come from the Art Institute of Chicago's public collection,
 // looked up by the backend (Backend/server.py, /api/art/...), which also
 // passes the pictures through. Only public-domain works with images are shown.
-// NYC art events: gallery exhibitions read from the galleries' own websites
+// NYC art events: gallery and museum exhibitions read from their own websites
 // (Backend/galleries.py), optional Google Events results (SerpApi key), and the
 // city's NYC Parks events feed (NYC Open Data).
 //
@@ -11,7 +12,8 @@ import './runway.css'
 // or NYC events (locks both).
 const DEFAULT_ARTIST = 35809 // Claude Monet
 
-const artistSelect = document.querySelector('#art-artist')
+const artistInput = document.querySelector('#art-artist') // the artist search box
+const artistList = document.querySelector('#art-artists')
 const periodSelect = document.querySelector('#art-period')
 const eventsSelect = document.querySelector('#art-events')
 const artistLock = document.querySelector('.art-lock[data-for="artist"]')
@@ -33,6 +35,7 @@ let artists = new Map() // id -> { id, name, born, died, works }
 let periods = new Map() // id -> { id, name, start, end, works }
 let eventTypes = new Map() // id -> { id, name, events }
 let artistsReady = false
+let artistsFailed = false
 let lastArtist = DEFAULT_ARTIST // where "All periods" goes back to
 let lastWorks = { kind: 'artist', id: DEFAULT_ARTIST } // where events "Off" goes back to
 // What the grid shows: an artist (id is a number), a period or an event type (ids are keys).
@@ -59,7 +62,7 @@ function showHeading() {
 		const type = eventTypes.get(current.id)
 		nameHeading.textContent = current.id === 'all' || !type ? '"NYC ART EVENTS"' : `"${type.name}"`
 		lifeLabel.textContent =
-			type?.group === 'NYC PARKS' ? 'NYC PARKS — NEXT 14 DAYS' : type?.group === 'GALLERIES' ? 'ON VIEW NOW & OPENING SOON' : 'NYC — NOW & NEXT'
+			type?.group === 'NYC PARKS' ? 'NYC PARKS — NEXT 14 DAYS' : type?.group === 'GALLERIES' || type?.group === 'MUSEUMS' ? 'ON VIEW NOW & OPENING SOON' : 'NYC — NOW & NEXT'
 		document.title = `${nameHeading.textContent} – Studio`
 		return
 	}
@@ -89,15 +92,133 @@ function lockMenus() {
 
 function lockArtists(locked) {
 	artistLock.hidden = !locked
-	artistSelect.disabled = locked || !artistsReady
-	if (!artistsReady) return // the list fills in and re-applies this when it arrives
-	artistSelect.querySelector('option[value=""]')?.remove()
-	if (locked) {
-		artistSelect.prepend(new Option('ALL ARTISTS', ''))
-		artistSelect.value = ''
-	} else {
-		artistSelect.value = String(lastArtist)
+	artistInput.disabled = locked
+	if (locked) closeArtists()
+	showArtistName()
+}
+
+// Puts the chosen artist's name back in the box (or ALL ARTISTS while locked).
+function showArtistName() {
+	if (current.kind !== 'artist') {
+		artistInput.value = 'ALL ARTISTS'
+		return
 	}
+	const fromHeading = nameHeading.textContent.replaceAll('"', '')
+	artistInput.value = artists.get(lastArtist)?.name ?? fromHeading
+}
+
+// ---- Artist search -------------------------------------------------------
+let artistOptions = [] // the list items that can be picked, in order
+let activeArtist = -1 // the one the arrow keys are on
+
+// "Monet", "claude monet" and "Cézanne"/"cezanne" all match; accents are ignored.
+const fold = (text) => text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+const squash = (text) => fold(text).replace(/[^a-z0-9]/g, '')
+
+// Names that start with the search come first, then ones with a word that
+// does (a surname), then any other match; ties go to artists with more works.
+function searchArtists(text) {
+	const wanted = fold(text).trim()
+	const tight = squash(text)
+	if (!tight) return []
+	const ranked = []
+	for (const artist of artists.values()) {
+		const loose = fold(artist.name)
+		const squashed = squash(artist.name)
+		let rank
+		if (squashed.startsWith(tight)) rank = 0
+		else if (loose.split(/[^a-z0-9]+/).some((word) => word.startsWith(wanted))) rank = 1
+		else if (squashed.includes(tight)) rank = 2
+		else continue
+		ranked.push({ artist, rank })
+	}
+	return ranked.sort((a, b) => a.rank - b.rank || b.artist.works - a.artist.works).map(({ artist }) => artist)
+}
+
+// Underlines the searched letters when they appear as typed.
+function highlighted(name, text) {
+	const wanted = fold(text).trim()
+	const at = wanted ? fold(name).indexOf(wanted) : -1
+	if (at < 0 || fold(name).length !== name.length) return [document.createTextNode(name)]
+	const mark = document.createElement('mark')
+	mark.textContent = name.slice(at, at + wanted.length)
+	return [name.slice(0, at), mark, name.slice(at + wanted.length)]
+}
+
+function listHeading(text, className = 'rw-brands-group') {
+	const item = document.createElement('li')
+	item.className = className
+	item.setAttribute('role', 'presentation')
+	item.textContent = text
+	return item
+}
+
+function artistChoice(artist, text) {
+	const item = document.createElement('li')
+	item.id = `art-artist-${artistOptions.length}`
+	item.setAttribute('role', 'option')
+	item.setAttribute('aria-selected', 'false')
+	item.dataset.id = artist.id
+	item.classList.toggle('is-current', current.kind === 'artist' && artist.id === lastArtist)
+	const works = document.createElement('span')
+	works.className = 'art-artist-works'
+	works.textContent = ` (${artist.works})`
+	item.append(...highlighted(artist.name, text), works)
+	artistOptions.push(item)
+	return item
+}
+
+function openArtists(text = '') {
+	artistOptions = []
+	activeArtist = -1
+	const items = []
+	if (!artistsReady) {
+		items.push(listHeading(artistsFailed ? 'ARTISTS COULD NOT BE LOADED' : 'LOADING ARTISTS', 'rw-brands-empty'))
+	} else if (!text.trim()) {
+		const most = [...artists.values()].sort((a, b) => b.works - a.works).slice(0, 12)
+		items.push(listHeading('MOST WORKS'), ...most.map((artist) => artistChoice(artist, '')))
+		items.push(listHeading('ALL ARTISTS A–Z'), ...[...artists.values()].map((artist) => artistChoice(artist, '')))
+	} else {
+		const found = searchArtists(text)
+		const shown = found.slice(0, 80)
+		items.push(...shown.map((artist) => artistChoice(artist, text)))
+		if (!found.length) items.push(listHeading('NO ARTIST MATCHES', 'rw-brands-empty'))
+		else if (found.length > shown.length) items.push(listHeading(`${found.length - shown.length} MORE — KEEP TYPING`, 'rw-brands-empty'))
+		if (found.length) setActiveArtist(0)
+	}
+	artistList.replaceChildren(...items)
+	artistList.hidden = false
+	artistInput.setAttribute('aria-expanded', 'true')
+	if (!text.trim()) {
+		// Scroll to the current artist in the A–Z part, not the "most works" part.
+		artistOptions.findLast((item) => item.classList.contains('is-current'))?.scrollIntoView({ block: 'center' })
+	}
+}
+
+function closeArtists() {
+	artistList.hidden = true
+	artistList.replaceChildren()
+	artistOptions = []
+	activeArtist = -1
+	artistInput.setAttribute('aria-expanded', 'false')
+	artistInput.removeAttribute('aria-activedescendant')
+}
+
+function setActiveArtist(index) {
+	artistOptions[activeArtist]?.setAttribute('aria-selected', 'false')
+	activeArtist = index
+	const item = artistOptions[activeArtist]
+	if (!item) return artistInput.removeAttribute('aria-activedescendant')
+	item.setAttribute('aria-selected', 'true')
+	item.scrollIntoView({ block: 'nearest' })
+	artistInput.setAttribute('aria-activedescendant', item.id)
+}
+
+function chooseArtist(id) {
+	closeArtists()
+	if (id !== lastArtist || current.kind !== 'artist') show('artist', id)
+	artistInput.blur()
+	showArtistName()
 }
 
 async function show(kind, id) {
@@ -272,6 +393,7 @@ async function loadPage(ticket) {
 	countLabel.textContent = result.total ? `${count(result.total)} WORKS` : ''
 	if (current.kind === 'artist' && !nameHeading.textContent && result.works[0]?.artist) {
 		nameHeading.textContent = `"${result.works[0].artist}"`
+		if (document.activeElement !== artistInput) showArtistName()
 	}
 
 	grid.append(...result.works.map((work) => card(work, ++current.shown)))
@@ -346,8 +468,38 @@ viewer.addEventListener('click', (event) => {
 	if (!event.target.closest('.art-view-link')) viewer.close()
 })
 
-artistSelect.addEventListener('change', () => {
-	if (artistSelect.value) show('artist', Number(artistSelect.value))
+artistInput.addEventListener('focus', () => {
+	artistInput.select()
+	openArtists()
+})
+artistInput.addEventListener('input', () => openArtists(artistInput.value))
+artistInput.addEventListener('blur', () => {
+	closeArtists()
+	showArtistName()
+})
+artistInput.addEventListener('keydown', (event) => {
+	if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+		event.preventDefault()
+		if (artistList.hidden) return openArtists()
+		if (!artistOptions.length) return
+		const step = event.key === 'ArrowDown' ? 1 : -1
+		const n = artistOptions.length
+		setActiveArtist(activeArtist < 0 ? (step > 0 ? 0 : n - 1) : (activeArtist + step + n) % n)
+	} else if (event.key === 'Enter') {
+		event.preventDefault()
+		const item = artistOptions[activeArtist] ?? (artistInput.value.trim() ? artistOptions[0] : null)
+		if (item) chooseArtist(Number(item.dataset.id))
+	} else if (event.key === 'Escape') {
+		event.preventDefault()
+		closeArtists()
+		artistInput.blur()
+	}
+})
+// pointerdown keeps the box focused, so the list is still there for the click.
+artistList.addEventListener('pointerdown', (event) => event.preventDefault())
+artistList.addEventListener('click', (event) => {
+	const item = event.target.closest('[role="option"]')
+	if (item) chooseArtist(Number(item.dataset.id))
 })
 periodSelect.addEventListener('change', () => {
 	if (periodSelect.value) show('period', periodSelect.value)
@@ -361,8 +513,6 @@ moreButton.addEventListener('click', () => loadPage(latest))
 
 const query = new URLSearchParams(location.search)
 lastArtist = Number(query.get('artist')) || DEFAULT_ARTIST
-artistSelect.append(new Option('LOADING ARTISTS…', 'loading'))
-artistSelect.disabled = true
 if (query.get('events')) {
 	eventsSelect.append(new Option('LOADING…', query.get('events')))
 	show('events', query.get('events'))
@@ -416,14 +566,11 @@ api('artists')
 	.then((people) => {
 		artists = new Map(people.map((artist) => [artist.id, artist]))
 		artistsReady = true
-		artistSelect.replaceChildren(...people.map(({ id, name, works }) => new Option(`${name} (${works})`, id)))
-		if (!artists.has(lastArtist)) {
-			const name = current.kind === 'artist' ? nameHeading.textContent.replaceAll('"', '') : ''
-			artistSelect.prepend(new Option(name || `ARTIST ${lastArtist}`, lastArtist))
-		}
-		lockArtists(current.kind !== 'artist')
 		if (current.kind === 'artist') showHeading()
+		if (document.activeElement === artistInput) openArtists(artistInput.value)
+		else showArtistName()
 	})
 	.catch(() => {
-		artistSelect.replaceChildren(new Option('ARTISTS COULD NOT BE LOADED', ''))
+		artistsFailed = true
+		if (document.activeElement === artistInput) openArtists()
 	})

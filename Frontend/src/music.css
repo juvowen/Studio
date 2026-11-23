@@ -1,0 +1,247 @@
+/* The music logo and its panel: fixed bottom-right on every page. */
+
+.mz {
+	--mz-ink: #000;
+	--mz-paper: #fff;
+	--mz-mono: ui-monospace, 'SF Mono', Menlo, 'Courier New', monospace;
+	position: fixed;
+	right: clamp(16px, 3vw, 32px);
+	bottom: clamp(16px, 3vw, 32px);
+	z-index: 50;
+	display: flex;
+	flex-direction: column;
+	align-items: flex-end;
+	gap: 10px;
+	font-family: var(--mz-mono);
+	font-size: 11px;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: var(--mz-ink);
+}
+
+.mz button {
+	font: inherit;
+	letter-spacing: inherit;
+	color: inherit;
+	cursor: pointer;
+}
+
+/* The logo */
+.mz-logo {
+	position: relative;
+	display: grid;
+	place-items: center;
+	width: 56px;
+	aspect-ratio: 1;
+	padding: 0;
+	border: 2px solid var(--mz-ink);
+	border-radius: 50%;
+	background: var(--mz-ink);
+	color: var(--mz-paper) !important;
+	box-shadow: 0 10px 24px #00000026;
+	transition: transform 0.15s ease;
+}
+
+.mz-logo:hover {
+	transform: scale(1.06);
+}
+
+.mz-logo:focus-visible {
+	outline: 3px solid var(--mz-ink);
+	outline-offset: 3px;
+}
+
+.mz-logo svg {
+	width: 26px;
+	height: 26px;
+}
+
+/* Little equalizer bars while music is playing */
+.mz-bars {
+	position: absolute;
+	right: -4px;
+	top: -4px;
+	display: none;
+	align-items: flex-end;
+	gap: 2px;
+	height: 18px;
+	padding: 3px 4px;
+	border: 2px solid var(--mz-ink);
+	border-radius: 9px;
+	background: var(--mz-paper);
+}
+
+.mz-bars i {
+	width: 3px;
+	height: 100%;
+	background: var(--mz-ink);
+	transform-origin: bottom;
+	animation: mz-bounce 0.9s ease-in-out infinite;
+}
+
+.mz-bars i:nth-child(2) {
+	animation-delay: -0.3s;
+}
+
+.mz-bars i:nth-child(3) {
+	animation-delay: -0.6s;
+}
+
+.mz.is-playing .mz-bars {
+	display: flex;
+}
+
+@keyframes mz-bounce {
+	0%,
+	100% {
+		transform: scaleY(0.3);
+	}
+	50% {
+		transform: scaleY(1);
+	}
+}
+
+/* The panel */
+.mz-panel {
+	width: min(320px, calc(100vw - 32px));
+	border: 2px solid var(--mz-ink);
+	background: var(--mz-paper);
+	box-shadow: 0 18px 36px #00000026;
+}
+
+.mz-panel[hidden] {
+	display: none;
+}
+
+.mz-head {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 8px 10px;
+	border-bottom: 2px solid var(--mz-ink);
+	font-weight: 700;
+}
+
+.mz-close {
+	padding: 0 4px;
+	border: 0;
+	background: none;
+	font-size: 16px !important;
+	line-height: 1;
+}
+
+.mz-now {
+	min-height: 2.6em;
+	margin: 0;
+	padding: 10px;
+	overflow-wrap: anywhere;
+}
+
+.mz-controls {
+	display: grid;
+	grid-template-columns: 1fr 1.6fr 1fr;
+	border-top: 1px solid var(--mz-ink);
+	border-bottom: 1px solid var(--mz-ink);
+}
+
+.mz-controls button {
+	padding: 10px 0;
+	border: 0;
+	background: var(--mz-paper);
+}
+
+.mz-controls button + button {
+	border-left: 1px solid var(--mz-ink);
+}
+
+.mz-controls button:hover:not(:disabled),
+.mz-track:hover,
+.mz-remove:hover,
+.mz-add:hover {
+	background: var(--mz-ink);
+	color: var(--mz-paper);
+}
+
+.mz-controls button:disabled {
+	opacity: 0.35;
+	cursor: default;
+}
+
+.mz-seek {
+	display: block;
+	width: calc(100% - 20px);
+	margin: 10px;
+	accent-color: var(--mz-ink);
+}
+
+.mz-list {
+	max-height: 200px;
+	margin: 0;
+	padding: 0;
+	overflow-y: auto;
+	list-style: none;
+	border-top: 1px solid var(--mz-ink);
+}
+
+.mz-list:empty {
+	display: none;
+}
+
+.mz-list li {
+	display: flex;
+	border-bottom: 1px solid #0000001f;
+}
+
+.mz-list li.is-current {
+	font-weight: 700;
+}
+
+.mz-list li.is-current .mz-track::before {
+	content: '▶ ';
+}
+
+.mz-track {
+	flex: 1;
+	min-width: 0;
+	padding: 8px 10px;
+	border: 0;
+	background: none;
+	text-align: left;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.mz-remove {
+	padding: 0 12px;
+	border: 0;
+	background: none;
+}
+
+.mz-add {
+	display: block;
+	padding: 12px 10px;
+	border-top: 2px solid var(--mz-ink);
+	text-align: center;
+	font-weight: 700;
+	cursor: pointer;
+}
+
+.mz-add input {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	opacity: 0;
+	pointer-events: none;
+}
+
+.mz-add:focus-within {
+	outline: 3px solid var(--mz-ink);
+	outline-offset: -3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.mz-bars i {
+		animation: none;
+	}
+}

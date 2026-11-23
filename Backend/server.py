@@ -49,12 +49,7 @@ DIST = HERE.parent / "Frontend" / "dist"
 PORT = int(os.environ.get("PORT", 8000))
 DEFAULT = ("OFF-WHITE", "Fall 2020 Ready-to-Wear")  # what the Runway page opens on
 
-sys.path.insert(0, str(SCRAPER))
-import vogue  # noqa: E402
-
-# The scraper calls requests.get with no time limit; give it one so a slow
-# Vogue response cannot hold a request open forever.
-vogue.requests = type("Requests", (), {"get": staticmethod(functools.partial(requests.get, timeout=20))})
+from unidecode import unidecode
 
 
 def year_of(show):
@@ -104,14 +99,78 @@ def remember(lookup):
     return cached
 
 
-@remember
+# ---- Vogue pages ----------------------------------------------------------------
+# Same addresses the scraper builds, but read faster: one kept-alive connection,
+# and the page's embedded JSON is decoded straight from the text instead of
+# parsing the whole multi-megabyte page with html5lib first.
+vogue_session = requests.Session()
+STATE_MARK = "window.__PRELOADED_STATE__"
+
+
+def slug(text):
+    return unidecode(text.replace(" ", "-").replace(".", "-").replace("&", "").replace("+", "").replace("--", "-").lower())
+
+
+def vogue_state(path):
+    response = vogue_session.get(f"https://www.vogue.com/fashion-shows/{path}", timeout=20)
+    text = response.text
+    at = text.find(STATE_MARK)
+    if at < 0:
+        return {}
+    state, _ = json.JSONDecoder().raw_decode(text, text.index("{", at))
+    return state.get("transformed", {})
+
+
+# Answers are also kept on disk, so a restart (or Render waking up) is not cold.
+RUNWAY_CACHE = HERE / "cache" / "runway.json"
+runway_lock = threading.Lock()
+try:
+    runway_saved = json.loads(RUNWAY_CACHE.read_text(encoding="utf-8"))
+except (OSError, ValueError):
+    runway_saved = {}
+
+
+def saved_lookup(kind):
+    def wrap(lookup):
+        @functools.wraps(lookup)
+        def cached(*key):
+            name = "\n".join((kind, *key))
+            if name in runway_saved:
+                return runway_saved[name]
+            result = lookup(*key)
+            if result:  # empty answers are retried next time
+                with runway_lock:
+                    runway_saved[name] = result
+                    try:
+                        RUNWAY_CACHE.parent.mkdir(exist_ok=True)
+                        temporary = RUNWAY_CACHE.with_suffix(".tmp")
+                        temporary.write_text(json.dumps(runway_saved), encoding="utf-8")
+                        temporary.replace(RUNWAY_CACHE)
+                    except OSError as error:
+                        print(f"Runway cache not saved: {error}")
+            return result
+
+        return cached
+
+    return wrap
+
+
+@saved_lookup("shows")
 def shows(designer):
-    return [{"show": name, "year": year_of(name)} for name in vogue.designer_to_shows(designer)]
+    collections = vogue_state(f"designer/{slug(designer)}").get("runwayDesignerContent", {}).get("designerCollections", [])
+    return [{"show": item["hed"], "year": year_of(item["hed"])} for item in collections if item.get("hed")]
 
 
-@remember
+@saved_lookup("show")
 def show_images(designer, show):
-    return [row[2] for row in vogue.designer_show_to_csv(designer, show) or []]
+    galleries = vogue_state(f"{unidecode(show.replace(' ', '-').lower())}/{slug(designer)}").get("runwayShowGalleries", {}).get("galleries") or [{}]
+    images = []
+    for item in galleries[0].get("items", []):
+        try:
+            images.append(item["image"]["sources"]["md"]["url"])
+        except (KeyError, TypeError):
+            pass
+    return images
 
 
 # ---- Art Studio: the Art Institute of Chicago's public API -------------------
@@ -300,7 +359,13 @@ EVENT_TYPES = [
     {"id": "kids", "name": "For Kids & Families",
      "title": r"best for kids|kids|family|families|tots|story time|children"},
 ]
-EVENT_TYPE_IDS = {"all", "galleries", "chelsea", "opening", "discovered"} | {kind["id"] for kind in EVENT_TYPES}
+# One menu entry per museum, e.g. "museum-whitney-museum".
+MUSEUM_IDS = {f"museum-{re.sub(r'[^a-z0-9]+', '-', m['name'].lower()).strip('-')}": m["name"] for m in galleries.MUSEUMS}
+EVENT_TYPE_IDS = (
+    {"all", "galleries", "chelsea", "opening", "discovered", "museums", "museums-opening"}
+    | {kind["id"] for kind in EVENT_TYPES}
+    | set(MUSEUM_IDS)
+)
 
 
 def refreshed_every(seconds):
@@ -378,12 +443,20 @@ def parks_events():
 
 
 def events_of(kind):
-    """Gallery shows first (closing soonest), then Google-found events, then Parks."""
-    shows = galleries.current_shows()
+    """Gallery and museum shows first (closing soonest), then Google-found events, then Parks."""
+    everything = galleries.current_shows()
+    shows = [show for show in everything if show.get("kind", "gallery") == "gallery"]
+    museums = [show for show in everything if show.get("kind") == "museum"]
+    if kind == "museums":
+        return museums
+    if kind == "museums-opening":
+        return [show for show in museums if show["opening"]]
+    if kind in MUSEUM_IDS:
+        return [show for show in museums if show["venue"] == MUSEUM_IDS[kind]]
     found = galleries.discovered_events()
     parks = parks_events()
     if kind == "all":
-        return shows + found + parks
+        return everything + found + parks
     if kind == "galleries":
         return shows
     if kind == "chelsea":
@@ -401,6 +474,14 @@ def nyc_event_types():
         {"id": "galleries", "name": "Gallery Shows — All NYC", "group": "GALLERIES"},
         {"id": "chelsea", "name": "Chelsea Galleries", "group": "GALLERIES"},
         {"id": "opening", "name": "Opening Soon", "group": "GALLERIES"},
+        {"id": "museums", "name": "Museum Exhibitions — All NYC", "group": "MUSEUMS"},
+        {"id": "museums-opening", "name": "Museums — Opening Soon", "group": "MUSEUMS"},
+    ]
+    # Each museum by name, once it has something on (browser-built sites need a key).
+    types += [
+        {"id": id, "name": name, "group": "MUSEUMS"}
+        for id, name in MUSEUM_IDS.items()
+        if events_of(id)
     ]
     if galleries.status()["serpapi"]:
         types.append({"id": "discovered", "name": "Found on Google Events", "group": "DISCOVERED"})

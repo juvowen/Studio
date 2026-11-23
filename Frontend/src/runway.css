@@ -86,7 +86,7 @@ body.rw {
   top: 0;
   z-index: 2;
   display: grid;
-  grid-template-columns: minmax(0, 1.3fr) minmax(0, 0.7fr) minmax(0, 1.4fr);
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.7fr) minmax(0, 0.55fr) minmax(0, 1.3fr);
   border-bottom: var(--rule);
   background: var(--paper);
 }
@@ -123,6 +123,93 @@ body.rw {
   text-transform: uppercase;
   appearance: none;
   cursor: pointer;
+}
+
+/* Brand search */
+.rw-search {
+  position: relative;
+}
+
+.rw-search input {
+  width: 100%;
+  min-width: 0;
+  height: 40px;
+  padding: 0 34px 0 10px;
+  border: var(--rule);
+  border-radius: 0;
+  background:
+    radial-gradient(circle at 5px 5px, transparent 3.5px, var(--ink) 3.5px, var(--ink) 5px, transparent 5px) right 12px top 12px / 10px 10px no-repeat,
+    linear-gradient(45deg, transparent 45%, var(--ink) 45%, var(--ink) 60%, transparent 60%) right 8px top 21px / 6px 6px no-repeat,
+    var(--paper);
+  color: var(--ink);
+  font: 700 15px/1 var(--sans);
+  text-transform: uppercase;
+  appearance: none;
+}
+
+.rw-search input::placeholder {
+  color: var(--mute);
+}
+
+.rw-search input:hover {
+  background-color: #f2f2f2;
+}
+
+.rw-search input:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.rw-brands {
+  position: absolute;
+  top: calc(100% - 2px);
+  left: 0;
+  right: 0;
+  z-index: 5;
+  max-height: min(60vh, 420px);
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  border: var(--rule);
+  background: var(--paper);
+  list-style: none;
+}
+
+.rw-brands li {
+  padding: 9px 10px;
+  font: 700 14px/1.2 var(--sans);
+  cursor: pointer;
+}
+
+.rw-brands li[aria-selected='true'] {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.rw-brands li.is-current::after {
+  content: ' ●';
+}
+
+.rw-brands .rw-brands-group,
+.rw-brands .rw-brands-empty {
+  padding: 10px 10px 6px;
+  border-top: var(--hair);
+  color: var(--mute);
+  font: 400 11px/1 var(--mono);
+  letter-spacing: 0.08em;
+  cursor: default;
+}
+
+.rw-brands .rw-brands-group:first-child {
+  border-top: 0;
+}
+
+.rw-brands mark {
+  background: none;
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 2px;
 }
 
 .rw-menu select:hover {
@@ -277,7 +364,7 @@ body.rw {
 
   .rw-menu {
     position: static;
-    grid-template-columns: minmax(0, 0.55fr) minmax(0, 1.45fr);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
 
   .rw-menu label:first-child {
@@ -289,8 +376,12 @@ body.rw {
     border-top: var(--rule);
   }
 
-  .rw-menu label:last-child {
+  .rw-menu label:nth-child(3) {
     border-left: var(--rule);
+  }
+
+  .rw-menu label:last-child {
+    grid-column: 1 / -1;
   }
 
   .rw-grid {
@@ -595,4 +686,20 @@ body:has(.art-view[open]) {
   .art-work img {
     padding: 8px;
   }
+}
+
+/* Art Studio artist search: the work count beside each name, and the box while locked */
+.art-artist-works {
+  color: var(--mute);
+  font-weight: 400;
+}
+
+.rw-brands li[aria-selected='true'] .art-artist-works {
+  color: inherit;
+}
+
+.rw-search input:disabled {
+  color: var(--mute);
+  border-color: var(--mute);
+  cursor: not-allowed;
 }

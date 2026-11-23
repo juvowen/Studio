@@ -1,9 +1,11 @@
 import './runway.css'
+import './music.js'
 
 // Opens on this show when someone clicks the Runway window.
 const DEFAULT = { designer: 'OFF-WHITE', show: 'Fall 2020 Ready-to-Wear' }
 
-const designerSelect = document.querySelector('#runway-designer')
+const designerSelect = document.querySelector('#runway-designer') // the brand search box
+const lineSelect = document.querySelector('#runway-line')
 const yearSelect = document.querySelector('#runway-year')
 const showSelect = document.querySelector('#runway-show')
 const designerHeading = document.querySelector('.rw-designer')
@@ -13,7 +15,8 @@ const statusLine = document.querySelector('.rw-status')
 const grid = document.querySelector('.rw-grid')
 
 let designer = ''
-let shows = []
+let shows = [] // every show of the brand
+let lineShows = [] // the ones in the chosen line
 const viewer = document.querySelector('.art-view')
 const viewerImage = viewer.querySelector('img')
 const viewerIndex = viewer.querySelector('.art-view-index')
@@ -42,7 +45,44 @@ function getShow(name, show) {
 	return showImages.get(key)
 }
 
+// Quietly asks for the shows the visitor is likely to pick next, two at a
+// time, so switching to them is instant. A newer pick replaces the queue.
+let prefetchQueue = []
+let prefetching = 0
+function prefetch(name, list) {
+	prefetchQueue = list.filter((show) => !showImages.has(`${name}\n${show}`)).map((show) => [name, show])
+	while (prefetching < 2 && prefetchQueue.length) prefetchNext()
+}
+function prefetchNext() {
+	const next = prefetchQueue.shift()
+	if (!next) return
+	prefetching++
+	getShow(...next)
+		.catch(() => {})
+		.finally(() => {
+			prefetching--
+			prefetchNext()
+		})
+}
+
+// The grid shows looks at most ~300px wide, so 640px pictures are sharp enough
+// at half the download of the 1024px ones; the large view still gets 2048px.
+const thumbnail = (src) => src.replace('/w_1024,', '/w_640,')
+
 const yearOf = (show) => show.match(/\b(19|20)\d\d\b/)?.[0] ?? 'Other'
+
+// Vogue names men's shows "… Menswear"; Ready-to-Wear, Resort, Pre-Fall and
+// Couture are the women's (sometimes co-ed) collections.
+const lineOf = (show) => (/menswear/i.test(show) ? 'MENSWEAR' : 'WOMENSWEAR')
+const LINE_KEY = 'runway-line'
+
+function savedLine() {
+	try {
+		return localStorage.getItem(LINE_KEY)
+	} catch {
+		return null
+	}
+}
 
 function setOptions(select, values, selected) {
 	select.replaceChildren(...values.map((value) => new Option(value, value)))
@@ -63,6 +103,7 @@ function status(text, loading = false) {
 async function pickDesigner(name, wantedShow) {
 	const ticket = ++latest
 	designer = name
+	shows = []
 	showDesigner(name)
 	setOptions(yearSelect, [])
 	setOptions(showSelect, [])
@@ -76,16 +117,38 @@ async function pickDesigner(name, wantedShow) {
 		return
 	}
 	if (ticket !== latest) return
-	const wanted = shows.find(({ show }) => show === wantedShow) ?? shows[0]
-	const years = [...new Set(shows.map(({ show }) => yearOf(show)))]
+	pickLine(wantedShow)
+	// Also the newest show of each line, which the line menu jumps to.
+	const firsts = ['MENSWEAR', 'WOMENSWEAR'].map((line) => shows.find(({ show }) => lineOf(show) === line)?.show)
+	prefetch(name, [...prefetchQueue.map(([, show]) => show), ...firsts.filter(Boolean)])
+}
+
+function pickLine(wantedShow) {
+	const line = lineSelect.value
+	lineShows = line === 'ALL' ? shows : shows.filter(({ show }) => lineOf(show) === line)
+	if (lineShows.length === 0) {
+		latest++
+		setOptions(yearSelect, [])
+		setOptions(showSelect, [])
+		seasonLabel.textContent = ''
+		status(`NO ${line} SHOWS FOR ${designer}`)
+		return
+	}
+	const wanted = lineShows.find(({ show }) => show === wantedShow) ?? lineShows[0]
+	const years = [...new Set(lineShows.map(({ show }) => yearOf(show)))]
 	setOptions(yearSelect, years, yearOf(wanted.show))
 	pickYear(wanted.show)
 }
 
 function pickYear(wantedShow) {
-	const inYear = shows.filter(({ show }) => yearOf(show) === yearSelect.value).map(({ show }) => show)
+	const inYear = lineShows.filter(({ show }) => yearOf(show) === yearSelect.value).map(({ show }) => show)
 	setOptions(showSelect, inYear, wantedShow)
 	loadShow()
+	// The other shows that year, then the next year's.
+	const years = [...yearSelect.options].map((option) => option.value)
+	const nextYear = years[years.indexOf(yearSelect.value) + 1]
+	const later = lineShows.filter(({ show }) => yearOf(show) === nextYear).map(({ show }) => show)
+	prefetch(designer, [...inYear, ...later])
 }
 
 async function loadShow() {
@@ -93,7 +156,7 @@ async function loadShow() {
 	const show = showSelect.value
 	seasonLabel.textContent = show
 	status('LOADING LOOKS', true)
-	history.replaceState(null, '', `?${new URLSearchParams({ designer, show })}`)
+	history.replaceState(null, '', `?${new URLSearchParams({ designer, line: lineSelect.value, show })}`)
 	let images
 	try {
 		images = await getShow(designer, show)
@@ -114,10 +177,10 @@ async function loadShow() {
 			const open = document.createElement('button')
 			open.type = 'button'
 			open.className = 'rw-look-open'
-			open.addEventListener('click', () => openViewer(src, index, images.length, show))
+			open.addEventListener('click', () => openViewer(thumbnail(src), src, index, images.length, show))
 
 			const image = document.createElement('img')
-			image.src = src
+			image.src = thumbnail(src)
 			image.alt = `${designer} ${show}, look ${index + 1}`
 			image.loading = 'lazy'
 			image.decoding = 'async'
@@ -145,14 +208,14 @@ function vogueLink(name, show) {
 }
 
 // Large view: shows the grid picture at once, then swaps in Vogue's 2048px one.
-function openViewer(src, index, total, show) {
+function openViewer(src, fullSrc, index, total, show) {
 	viewerIndex.textContent = `LOOK ${pad(index + 1)} / ${pad(total)}`
 	viewerTitle.textContent = `"${designer}"`
 	viewerMeta.textContent = show
 	viewerLink.href = vogueLink(designer, show)
 	viewerImage.alt = `${designer} ${show}, look ${index + 1}`
 	viewerImage.src = src
-	const largeSrc = src.replace('/w_1024,', '/w_2048,')
+	const largeSrc = fullSrc.replace('/w_1024,', '/w_2048,')
 	if (largeSrc !== src) {
 		const large = new Image()
 		large.referrerPolicy = 'no-referrer'
@@ -170,22 +233,158 @@ viewer.addEventListener('click', (event) => {
 	if (!event.target.closest('.art-view-link')) viewer.close()
 })
 
-// Selects the brand in the menu, adding it if the list has not loaded yet.
-function showDesigner(name) {
-	if (![...designerSelect.options].some((option) => option.value === name)) {
-		designerSelect.prepend(new Option(name, name))
+// ---- Brand search -------------------------------------------------------
+const brandList = document.querySelector('#runway-brands')
+let brands = { popular: [], all: [] }
+let options = [] // the list items that can be picked, in order
+let active = -1 // the one the arrow keys are on
+
+// "Off White", "offwhite" and "OFF-WHITE" all find OFF-WHITE; accents are ignored.
+const fold = (text) => text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+const squash = (text) => fold(text).replace(/[^a-z0-9]/g, '')
+
+// Brands that start with the search come first, then ones with a word that
+// does, then any other match.
+function search(text) {
+	const wanted = fold(text).trim()
+	const tight = squash(text)
+	if (!tight) return []
+	const ranked = []
+	for (const name of brands.all) {
+		const loose = fold(name)
+		const squashed = squash(name)
+		let rank
+		if (squashed.startsWith(tight)) rank = 0
+		else if (loose.split(/[^a-z0-9]+/).some((word) => word.startsWith(wanted))) rank = 1
+		else if (squashed.includes(tight)) rank = 2
+		else continue
+		ranked.push({ name, rank })
 	}
+	return ranked.sort((a, b) => a.rank - b.rank).map(({ name }) => name)
+}
+
+// Underlines the searched letters when they appear as typed.
+function highlighted(name, text) {
+	const wanted = fold(text).trim()
+	const at = wanted ? fold(name).indexOf(wanted) : -1
+	if (at < 0 || fold(name).length !== name.length) return [document.createTextNode(name)]
+	const mark = document.createElement('mark')
+	mark.textContent = name.slice(at, at + wanted.length)
+	return [name.slice(0, at), mark, name.slice(at + wanted.length)]
+}
+
+function heading(text, className = 'rw-brands-group') {
+	const item = document.createElement('li')
+	item.className = className
+	item.setAttribute('role', 'presentation')
+	item.textContent = text
+	return item
+}
+
+function choice(name, text) {
+	const item = document.createElement('li')
+	item.id = `rw-brand-${options.length}`
+	item.setAttribute('role', 'option')
+	item.setAttribute('aria-selected', 'false')
+	item.dataset.name = name
+	item.classList.toggle('is-current', name === designer)
+	item.append(...highlighted(name, text))
+	options.push(item)
+	return item
+}
+
+function openBrands(text = '') {
+	options = []
+	active = -1
+	const items = []
+	if (!text.trim()) {
+		if (brands.popular.length) items.push(heading('POPULAR'), ...brands.popular.map((name) => choice(name, '')))
+		if (brands.all.length) items.push(heading('ALL BRANDS A–Z'), ...brands.all.map((name) => choice(name, '')))
+		if (!items.length) items.push(heading('LOADING BRANDS', 'rw-brands-empty'))
+	} else {
+		const found = search(text)
+		const shown = found.slice(0, 80)
+		items.push(...shown.map((name) => choice(name, text)))
+		if (!found.length) items.push(heading(brands.all.length ? 'NO BRAND MATCHES' : 'LOADING BRANDS', 'rw-brands-empty'))
+		else if (found.length > shown.length) items.push(heading(`${found.length - shown.length} MORE — KEEP TYPING`, 'rw-brands-empty'))
+		if (found.length) setActive(0)
+	}
+	brandList.replaceChildren(...items)
+	brandList.hidden = false
+	designerSelect.setAttribute('aria-expanded', 'true')
+	if (!text.trim()) options.find((item) => item.dataset.name === designer)?.scrollIntoView({ block: 'center' })
+}
+
+function closeBrands() {
+	brandList.hidden = true
+	brandList.replaceChildren()
+	options = []
+	active = -1
+	designerSelect.setAttribute('aria-expanded', 'false')
+	designerSelect.removeAttribute('aria-activedescendant')
+}
+
+function setActive(index) {
+	options[active]?.setAttribute('aria-selected', 'false')
+	active = index
+	const item = options[active]
+	if (!item) return designerSelect.removeAttribute('aria-activedescendant')
+	item.setAttribute('aria-selected', 'true')
+	item.scrollIntoView({ block: 'nearest' })
+	designerSelect.setAttribute('aria-activedescendant', item.id)
+}
+
+function chooseBrand(name) {
+	closeBrands()
+	if (name !== designer) pickDesigner(name)
+	else showDesigner(name)
+	designerSelect.blur()
+}
+
+// Puts the current brand back in the box.
+function showDesigner(name) {
 	designerSelect.value = name
 }
 
-function group(label, names) {
-	const optgroup = document.createElement('optgroup')
-	optgroup.label = label
-	optgroup.append(...names.map((name) => new Option(name, name)))
-	return optgroup
-}
-
-designerSelect.addEventListener('change', () => pickDesigner(designerSelect.value))
+designerSelect.addEventListener('focus', () => {
+	designerSelect.select()
+	openBrands()
+})
+designerSelect.addEventListener('input', () => openBrands(designerSelect.value))
+designerSelect.addEventListener('blur', () => {
+	closeBrands()
+	showDesigner(designer)
+})
+designerSelect.addEventListener('keydown', (event) => {
+	if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+		event.preventDefault()
+		if (brandList.hidden) return openBrands(designerSelect.value === designer ? '' : designerSelect.value)
+		if (!options.length) return
+		const step = event.key === 'ArrowDown' ? 1 : -1
+		setActive(active < 0 ? (step > 0 ? 0 : options.length - 1) : (active + step + options.length) % options.length)
+	} else if (event.key === 'Enter') {
+		event.preventDefault()
+		const item = options[active] ?? options[0]
+		if (item) chooseBrand(item.dataset.name)
+	} else if (event.key === 'Escape') {
+		event.preventDefault()
+		closeBrands()
+		showDesigner(designer)
+		designerSelect.blur()
+	}
+})
+// pointerdown keeps the box focused, so the list is still there for the click.
+brandList.addEventListener('pointerdown', (event) => event.preventDefault())
+brandList.addEventListener('click', (event) => {
+	const item = event.target.closest('[role="option"]')
+	if (item) chooseBrand(item.dataset.name)
+})
+lineSelect.addEventListener('change', () => {
+	try {
+		localStorage.setItem(LINE_KEY, lineSelect.value)
+	} catch {}
+	if (shows.length) pickLine(showSelect.value)
+})
 yearSelect.addEventListener('change', () => pickYear())
 showSelect.addEventListener('change', loadShow)
 
@@ -194,6 +393,10 @@ const start = query.has('designer')
 	? { designer: query.get('designer'), show: query.get('show') }
 	: DEFAULT
 
+const line = query.get('line') ?? savedLine()
+if ([...lineSelect.options].some((option) => option.value === line)) lineSelect.value = line
+if (start.show && lineSelect.value !== 'ALL' && lineOf(start.show) !== lineSelect.value) start.show = null
+
 // Ask for the opening show alongside the brand's show list instead of after it.
 if (start.show) getShow(start.designer, start.show)
 
@@ -201,7 +404,7 @@ pickDesigner(start.designer, start.show)
 
 api('designers')
 	.then(({ popular, all }) => {
-		designerSelect.replaceChildren(group('POPULAR', popular), group('ALL BRANDS A–Z', all))
-		showDesigner(designer)
+		brands = { popular, all }
+		if (!brandList.hidden) openBrands(designerSelect.value === designer ? '' : designerSelect.value)
 	})
 	.catch(() => {})

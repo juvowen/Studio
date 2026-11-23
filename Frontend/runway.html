@@ -22,14 +22,35 @@
       <form class="rw-menu" aria-label="Choose a show" onsubmit="return false">
         <label>
           <span>01 / BRAND</span>
-          <select id="runway-designer"></select>
+          <div class="rw-search">
+            <input
+              id="runway-designer"
+              type="text"
+              role="combobox"
+              aria-autocomplete="list"
+              aria-expanded="false"
+              aria-controls="runway-brands"
+              autocomplete="off"
+              spellcheck="false"
+              placeholder="SEARCH BRANDS"
+            />
+            <ul id="runway-brands" class="rw-brands" role="listbox" aria-label="Brands" hidden></ul>
+          </div>
         </label>
         <label>
-          <span>02 / YEAR</span>
+          <span>02 / LINE</span>
+          <select id="runway-line">
+            <option value="ALL">ALL</option>
+            <option value="MENSWEAR">MENSWEAR</option>
+            <option value="WOMENSWEAR">WOMENSWEAR</option>
+          </select>
+        </label>
+        <label>
+          <span>03 / YEAR</span>
           <select id="runway-year"></select>
         </label>
         <label>
-          <span>03 / SHOW</span>
+          <span>04 / SHOW</span>
           <select id="runway-show"></select>
         </label>
       </form>

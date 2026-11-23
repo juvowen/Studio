@@ -186,3 +186,7 @@ main {
     transition-duration: 0.01ms !important;
   }
 }
+/* Front page: the music logo takes the wordmark's blue. */
+body .mz {
+  --mz-ink: var(--blue);
+}
