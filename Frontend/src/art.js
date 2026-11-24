@@ -1,5 +1,8 @@
 import './runway.css'
 import './music.js'
+import { showMuseums, hideMuseums } from './museums.js'
+import { cartButton } from './board-store.js'
+import './cart.js'
 
 // Artworks come from the Art Institute of Chicago's public collection,
 // looked up by the backend (Backend/server.py, /api/art/...), which also
@@ -23,6 +26,7 @@ const lifeLabel = document.querySelector('.art-life')
 const countLabel = document.querySelector('.rw-count')
 const statusLine = document.querySelector('.rw-status')
 const grid = document.querySelector('.art-grid')
+const museumPanel = document.querySelector('.art-museum')
 const moreButton = document.querySelector('.art-more')
 const viewer = document.querySelector('.art-view')
 const viewerImage = viewer.querySelector('img')
@@ -62,7 +66,11 @@ function showHeading() {
 		const type = eventTypes.get(current.id)
 		nameHeading.textContent = current.id === 'all' || !type ? '"NYC ART EVENTS"' : `"${type.name}"`
 		lifeLabel.textContent =
-			type?.group === 'NYC PARKS' ? 'NYC PARKS — NEXT 14 DAYS' : type?.group === 'GALLERIES' || type?.group === 'MUSEUMS' ? 'ON VIEW NOW & OPENING SOON' : 'NYC — NOW & NEXT'
+			current.id === 'museums-map'
+				? 'WHERE TO FIND THEM'
+				: type?.address
+					? type.area.toUpperCase()
+					: type?.group === 'NYC PARKS' ? 'NYC PARKS — NEXT 14 DAYS' : type?.group === 'GALLERIES' || type?.group === 'MUSEUMS' ? 'ON VIEW NOW & OPENING SOON' : 'NYC — NOW & NEXT'
 		document.title = `${nameHeading.textContent} – Studio`
 		return
 	}
@@ -228,6 +236,7 @@ async function show(kind, id) {
 	if (kind !== 'events') lastWorks = { kind, id }
 	lockMenus()
 	grid.replaceChildren()
+	hideMuseums(museumPanel)
 	moreButton.hidden = true
 	countLabel.textContent = ''
 	nameHeading.textContent = ''
@@ -249,9 +258,54 @@ async function loadEvents(ticket) {
 	if (ticket !== latest) return
 	current.total = events.length
 	current.shown = events.length
-	status(events.length ? '' : 'NOTHING LISTED HERE RIGHT NOW. GALLERY LISTINGS REFRESH EVERY FEW HOURS.')
+	current.loaded = true
+	if (isMuseumView()) drawMuseums()
+	if (current.id === 'museums-map') {
+		status('')
+		return
+	}
+	emptyNote(events.length)
 	countLabel.textContent = events.length ? `${pad(events.length)} ${events.length === 1 ? 'EVENT' : 'EVENTS'}` : ''
 	grid.replaceChildren(...events.map((event, index) => eventCard(event, index + 1)))
+}
+
+// What to say under an empty list. A museum's page may arrive before the
+// museum list does, so this runs again once it has.
+function emptyNote(found) {
+	const type = eventTypes.get(current.id)
+	if (found) status('')
+	else if (type?.url) museumLink(type)
+	else status('NOTHING LISTED HERE RIGHT NOW. GALLERY LISTINGS REFRESH EVERY FEW HOURS.')
+}
+
+// The museum map: every museum, or one museum's address and directions.
+const isMuseumView = () => current.kind === 'events' && (current.id === 'museums-map' || current.id.startsWith('museum-'))
+
+function drawMuseums() {
+	const museums = [...eventTypes.values()].filter((type) => type.address)
+	if (!museums.length) return // shown once the museum list arrives
+	showMuseums(museumPanel, museums, current.id, pickMuseum)
+	if (current.id === 'museums-map') countLabel.textContent = `${pad(museums.length)} MUSEUMS`
+}
+
+function pickMuseum(id) {
+	eventsSelect.value = id
+	show('events', id)
+	museumPanel.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+
+// A museum whose exhibitions are not read here: point to its own page.
+function museumLink(type) {
+	const why = type.readable
+		? 'NO EXHIBITIONS READ FROM THIS MUSEUM RIGHT NOW. '
+		: `${type.name.toUpperCase()}'S EXHIBITIONS CAN'T BE LISTED HERE. `
+	const link = document.createElement('a')
+	link.href = type.url
+	link.target = '_blank'
+	link.rel = 'noopener'
+	link.textContent = `SEE CURRENT EXHIBITIONS AT ${type.name.toUpperCase()} ↗`
+	statusLine.replaceChildren(why, link)
+	statusLine.classList.remove('is-loading')
 }
 
 // Event times are New York times without a zone; show them as written.
@@ -346,6 +400,8 @@ function eventCard(event, number) {
 }
 
 function openEvent(event, number) {
+	pinWork.hidden = !event.image
+	viewerWork = event.image ? { src: event.image, caption: [event.title, event.venue].filter(Boolean).join(' — '), link: event.link } : null
 	viewerIndex.textContent = `${pad(number)} / ${pad(current.total)} — ${placeLabel(event)}`
 	viewerTitle.textContent = `"${event.title}"`
 	if (event.source === 'parks') {
@@ -444,7 +500,18 @@ function card(work, number) {
 }
 
 // Large view: shows the list picture at once, then swaps in the bigger one.
+let viewerWork = null // what "+ CART" saves from the viewer
+const pinWork = cartButton(() => viewerWork)
+viewer.querySelector('.art-view-caption').append(pinWork)
+
 function openViewer(work, number) {
+	viewerWork = {
+		// The size already loaded in the grid: the museum's large one takes half a minute.
+		src: new URL(work.image, location.href).href,
+		caption: [work.title, work.artist, work.date].filter(Boolean).join(' — '),
+		link: work.link,
+	}
+	pinWork.hidden = false
 	viewerLink.textContent = 'VIEW AT THE ART INSTITUTE ↗'
 	viewer.classList.remove('is-event')
 	viewerImage.hidden = false
@@ -465,7 +532,7 @@ function openViewer(work, number) {
 viewer.querySelector('.art-view-close').addEventListener('click', () => viewer.close())
 // Clicking anywhere except the museum link closes it.
 viewer.addEventListener('click', (event) => {
-	if (!event.target.closest('.art-view-link')) viewer.close()
+	if (!event.target.closest('.art-view-link, .wb-add, .wb-toast')) viewer.close()
 })
 
 artistInput.addEventListener('focus', () => {
@@ -542,8 +609,9 @@ api('event-types')
 		// Options grouped under GALLERIES / DISCOVERED / NYC PARKS headings.
 		const groups = new Map()
 		const top = []
-		for (const { id, name, events, group } of list) {
-			const option = new Option(`${name} (${events})`, id)
+		for (const { id, name, events, group, url } of list) {
+			const label = id === 'museums-map' ? `${name} ◎` : events || !url ? `${name} (${events})` : name
+			const option = new Option(label, id)
 			if (!group) top.push(option)
 			else {
 				if (!groups.has(group)) {
@@ -557,6 +625,8 @@ api('event-types')
 		eventsSelect.replaceChildren(new Option('OFF', ''), ...top, ...groups.values())
 		eventsSelect.value = current.kind === 'events' ? current.id : ''
 		if (current.kind === 'events') showHeading()
+		if (isMuseumView()) drawMuseums()
+		if (isMuseumView() && current.loaded && current.id !== 'museums-map') emptyNote(current.total)
 	})
 	.catch(() => {
 		eventsSelect.replaceChildren(new Option('EVENTS COULD NOT BE LOADED', ''))

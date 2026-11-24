@@ -10,6 +10,11 @@ Nothing is downloaded ahead of time; pictures load straight from Vogue.
   GET /api/shows?designer=OFF-WHITE       that brand's shows, newest first
   GET /api/show?designer=OFF-WHITE&show=Fall 2020 Ready-to-Wear
                                           picture addresses for one show
+  GET /api/pieces?image=<vogue picture>&designer=…&show=…
+                                          the pieces in a runway look, with boxes (Gemini)
+  GET /api/piece/shop?image=…&piece=2     the original and lookalikes for one piece
+  GET /api/piece/image?image=…&piece=2    just that piece, cropped (JPEG)
+  GET /api/piece/details?image=…&piece=2  photos and current prices for those products
   GET /api/art/artists                    Art Studio artists (Art Institute of Chicago)
   GET /api/art/periods                    Art Studio periods with work counts
   GET /api/art/event-types                NYC art event types with counts (NYC Parks)
@@ -42,6 +47,7 @@ from urllib.parse import parse_qs, urlparse
 import requests
 
 import galleries
+import lookalikes
 
 HERE = Path(__file__).resolve().parent
 SCRAPER = HERE / "Vogue-Runway-Scraper"
@@ -360,11 +366,30 @@ EVENT_TYPES = [
      "title": r"best for kids|kids|family|families|tots|story time|children"},
 ]
 # One menu entry per museum, e.g. "museum-whitney-museum".
-MUSEUM_IDS = {f"museum-{re.sub(r'[^a-z0-9]+', '-', m['name'].lower()).strip('-')}": m["name"] for m in galleries.MUSEUMS}
+def museum_id(museum):
+    return f"museum-{re.sub(r'[^a-z0-9]+', '-', museum['name'].lower()).strip('-')}"
+
+
+MUSEUM_IDS = {museum_id(m): m["name"] for m in galleries.MUSEUMS}
+# Every museum for the menu, A-Z, with its own exhibitions page.
+ALL_MUSEUMS = sorted(
+    (
+        {
+            "id": museum_id(m),
+            "name": m["name"],
+            "url": m["url"],
+            "area": m["area"],
+            "readable": m in galleries.MUSEUMS,
+            **galleries.MUSEUM_PLACES[m["name"]],
+        }
+        for m in galleries.MUSEUMS + galleries.LINKED_MUSEUMS
+    ),
+    key=lambda museum: re.sub(r"^the ", "", museum["name"].casefold()),
+)
 EVENT_TYPE_IDS = (
-    {"all", "galleries", "chelsea", "opening", "discovered", "museums", "museums-opening"}
+    {"all", "galleries", "chelsea", "opening", "discovered", "museums", "museums-opening", "museums-map"}
     | {kind["id"] for kind in EVENT_TYPES}
-    | set(MUSEUM_IDS)
+    | {museum["id"] for museum in ALL_MUSEUMS}
 )
 
 
@@ -453,6 +478,8 @@ def events_of(kind):
         return [show for show in museums if show["opening"]]
     if kind in MUSEUM_IDS:
         return [show for show in museums if show["venue"] == MUSEUM_IDS[kind]]
+    if kind == "museums-map" or kind.startswith("museum-"):
+        return []  # a museum that is only linked to
     found = galleries.discovered_events()
     parks = parks_events()
     if kind == "all":
@@ -474,14 +501,15 @@ def nyc_event_types():
         {"id": "galleries", "name": "Gallery Shows — All NYC", "group": "GALLERIES"},
         {"id": "chelsea", "name": "Chelsea Galleries", "group": "GALLERIES"},
         {"id": "opening", "name": "Opening Soon", "group": "GALLERIES"},
+        {"id": "museums-map", "name": "Museum Map & Addresses", "group": "MUSEUMS"},
         {"id": "museums", "name": "Museum Exhibitions — All NYC", "group": "MUSEUMS"},
         {"id": "museums-opening", "name": "Museums — Opening Soon", "group": "MUSEUMS"},
     ]
-    # Each museum by name, once it has something on (browser-built sites need a key).
+    # Every museum by name, even with nothing read from it: the page then links
+    # to the museum's own exhibitions page.
     types += [
-        {"id": id, "name": name, "group": "MUSEUMS"}
-        for id, name in MUSEUM_IDS.items()
-        if events_of(id)
+        {**museum, "group": "MUSEUMS"}
+        for museum in ALL_MUSEUMS
     ]
     if galleries.status()["serpapi"]:
         types.append({"id": "discovered", "name": "Found on Google Events", "group": "DISCOVERED"})
@@ -511,6 +539,8 @@ class Handler(SimpleHTTPRequestHandler):
                 if not images:
                     return self.send_json({"error": "No pictures found for this show."}, 404)
                 return self.send_json(images)
+            if url.path.startswith("/api/piece") and query.get("image"):
+                return self.send_piece(url.path, query)
             if url.path.startswith("/api/art/image/"):
                 image_id = url.path.rsplit("/", 1)[1]
                 if not ART_IMAGE_ID.match(image_id):
@@ -542,6 +572,34 @@ class Handler(SimpleHTTPRequestHandler):
             else:
                 source = "Vogue Runway"
             return self.send_json({"error": f"{source} could not be reached."}, 502)
+
+    def send_piece(self, path, query):
+        """Runway pieces found by Gemini (lookalikes.py)."""
+        if not lookalikes.available():
+            return self.send_json({"error": "Add GEMINI_API_KEY to Backend/.env to find pieces."}, 503)
+        image = query["image"]
+        piece = int(query["piece"]) if query.get("piece", "").isdigit() else None
+        try:
+            if path == "/api/pieces":
+                return self.send_json(lookalikes.pieces(image, query.get("designer", ""), query.get("show", "")))
+            found = lookalikes.pieces(image)
+            if piece is None or piece >= len(found):
+                return self.send_json({"error": "Unknown piece."}, 404)
+            if path == "/api/piece/details":
+                return self.send_json(lookalikes.details(image, piece))
+            if path == "/api/piece/shop":
+                return self.send_json(lookalikes.shop(image, piece, query.get("designer", "")))
+            if path == "/api/piece/image":
+                return self.send_image(lookalikes.crop(image, found[piece]["box"]), "image/jpeg")
+            return self.send_json({"error": "Unknown request."}, 404)
+        except ValueError as error:
+            return self.send_json({"error": str(error)}, 400)
+        except lookalikes.Busy as error:
+            print(f"Gemini busy: {error}", flush=True)
+            return self.send_json({"error": "Gemini is busy right now. Try again in a moment."}, 503)
+        except lookalikes.GeminiError as error:
+            print(f"Gemini failed: {error}", flush=True)
+            return self.send_json({"error": "Gemini could not look at this picture."}, 502)
 
     def send_image(self, body, content_type):
         self.send_response(200)

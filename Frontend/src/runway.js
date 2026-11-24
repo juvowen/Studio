@@ -1,5 +1,8 @@
 import './runway.css'
 import './music.js'
+import { openPieces, setUpPieces } from './lookalikes.js'
+import { cartButton } from './board-store.js'
+import './cart.js'
 
 // Opens on this show when someone clicks the Runway window.
 const DEFAULT = { designer: 'OFF-WHITE', show: 'Fall 2020 Ready-to-Wear' }
@@ -208,7 +211,15 @@ function vogueLink(name, show) {
 }
 
 // Large view: shows the grid picture at once, then swaps in Vogue's 2048px one.
+let viewerLook = null // what "+ CART" saves from the viewer
+viewer.querySelector('.rw-view-actions').prepend(cartButton(() => viewerLook))
+
 function openViewer(src, fullSrc, index, total, show) {
+	viewerLook = {
+		src: fullSrc,
+		caption: `${designer} — ${show} — LOOK ${pad(index + 1)}`,
+		link: vogueLink(designer, show),
+	}
 	viewerIndex.textContent = `LOOK ${pad(index + 1)} / ${pad(total)}`
 	viewerTitle.textContent = `"${designer}"`
 	viewerMeta.textContent = show
@@ -225,12 +236,14 @@ function openViewer(src, fullSrc, index, total, show) {
 		large.src = largeSrc
 	}
 	viewer.showModal()
+	openPieces(fullSrc, designer, show)
 }
 
 viewer.querySelector('.art-view-close').addEventListener('click', () => viewer.close())
-// Clicking anywhere except the Vogue link closes it.
+setUpPieces(viewer)
+// Clicking anywhere except the links, the pieces and their panel closes it.
 viewer.addEventListener('click', (event) => {
-	if (!event.target.closest('.art-view-link')) viewer.close()
+	if (!event.target.closest('.art-view-link, .rw-find, .rw-hotspot, .rw-lookalikes, .wb-add, .wb-toast')) viewer.close()
 })
 
 // ---- Brand search -------------------------------------------------------

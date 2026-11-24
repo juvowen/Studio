@@ -7,7 +7,7 @@ export default defineConfig({
   },
   build: {
     rollupOptions: {
-      input: ['index.html', 'runway.html', 'art-studio.html'],
+      input: ['index.html', 'runway.html', 'art-studio.html', 'whiteboard.html'],
     },
   },
 })

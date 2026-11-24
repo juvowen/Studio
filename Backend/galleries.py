@@ -24,6 +24,7 @@ import re
 import threading
 import time
 import urllib.robotparser
+from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime, timedelta
 from pathlib import Path
 from urllib.parse import urljoin, urlparse
@@ -94,6 +95,56 @@ MUSEUMS = [
 ]
 for _museum in MUSEUMS:
     _museum.update(kind="museum", nyc_only=True, check=16)
+
+# Museums that cannot be read (see above) are still listed on the page, where
+# choosing one links to its own exhibitions page instead.
+LINKED_MUSEUMS = [
+    {"name": "MoMA", "url": "https://www.moma.org/calendar/exhibitions", "area": "Midtown"},
+    {"name": "MoMA PS1", "url": "https://www.momaps1.org/en/programs", "area": "Queens"},
+    {"name": "The Met", "url": "https://www.metmuseum.org/exhibitions", "area": "Upper East Side"},
+    {"name": "The Met Cloisters", "url": "https://www.metmuseum.org/plan-your-visit/met-cloisters", "area": "Fort Tryon Park"},
+    {"name": "Brooklyn Museum", "url": "https://www.brooklynmuseum.org/exhibitions", "area": "Brooklyn"},
+    {"name": "El Museo del Barrio", "url": "https://www.elmuseo.org/exhibitions/", "area": "East Harlem"},
+    {"name": "New Museum", "url": "https://www.newmuseum.org/exhibitions", "area": "Lower East Side"},
+    {"name": "The Morgan Library & Museum", "url": "https://www.themorgan.org/exhibitions/current", "area": "Murray Hill"},
+    {"name": "Noguchi Museum", "url": "https://www.noguchi.org/museum/exhibitions/", "area": "Queens"},
+    {"name": "Asia Society", "url": "https://asiasociety.org/new-york/exhibitions", "area": "Upper East Side"},
+    {"name": "Museum of the Moving Image", "url": "https://movingimage.org/exhibitions/", "area": "Queens"},
+    {"name": "Dia Chelsea", "url": "https://www.diaart.org/visit/visit-our-locations-sites/dia-chelsea", "area": "Chelsea"},
+    {"name": "Leslie-Lohman Museum", "url": "https://www.leslielohman.org/exhibitions", "area": "SoHo"},
+    {"name": "Poster House", "url": "https://posterhouse.org/exhibitions/", "area": "Chelsea"},
+]
+
+# Where each museum is, for the map and directions (coordinates from OpenStreetMap).
+MUSEUM_PLACES = {
+    'Whitney Museum': {"address": '99 Gansevoort St, New York, NY 10014', "lat": 40.73965, "lng": -74.00892},
+    'The Frick Collection': {"address": '1 E 70th St, New York, NY 10021', "lat": 40.77126, "lng": -73.96717},
+    'Neue Galerie': {"address": '1048 Fifth Ave, New York, NY 10028', "lat": 40.78122, "lng": -73.96024},
+    'The Jewish Museum': {"address": '1109 Fifth Ave, New York, NY 10128', "lat": 40.78543, "lng": -73.95752},
+    'The Studio Museum in Harlem': {"address": '144 W 125th St, New York, NY 10027', "lat": 40.80842, "lng": -73.94762},
+    'ICP': {"address": '79 Essex St, New York, NY 10002', "lat": 40.71815, "lng": -73.9889},
+    'Museum of Arts and Design': {"address": '2 Columbus Circle, New York, NY 10019', "lat": 40.76733, "lng": -73.98194},
+    'The Bronx Museum': {"address": '1040 Grand Concourse, Bronx, NY 10456', "lat": 40.83109, "lng": -73.91995},
+    'Museum of the City of New York': {"address": '1220 Fifth Ave, New York, NY 10029', "lat": 40.79253, "lng": -73.9518},
+    'The Drawing Center': {"address": '35 Wooster St, New York, NY 10013', "lat": 40.72244, "lng": -74.00289},
+    'Guggenheim': {"address": '1071 Fifth Ave, New York, NY 10128', "lat": 40.78299, "lng": -73.95892},
+    'Cooper Hewitt': {"address": '2 E 91st St, New York, NY 10128', "lat": 40.78428, "lng": -73.9577},
+    'Queens Museum': {"address": 'Flushing Meadows Corona Park, Queens, NY 11368', "lat": 40.74587, "lng": -73.84674},
+    'MoMA': {"address": '11 W 53rd St, New York, NY 10019', "lat": 40.76161, "lng": -73.9775},
+    'MoMA PS1': {"address": '22-25 Jackson Ave, Long Island City, NY 11101', "lat": 40.74558, "lng": -73.94747},
+    'The Met': {"address": '1000 Fifth Ave, New York, NY 10028', "lat": 40.77944, "lng": -73.96338},
+    'The Met Cloisters': {"address": '99 Margaret Corbin Dr, New York, NY 10040', "lat": 40.86483, "lng": -73.93171},
+    'Brooklyn Museum': {"address": '200 Eastern Pkwy, Brooklyn, NY 11238', "lat": 40.67095, "lng": -73.96329},
+    'El Museo del Barrio': {"address": '1230 Fifth Ave, New York, NY 10029', "lat": 40.79312, "lng": -73.95134},
+    'New Museum': {"address": '235 Bowery, New York, NY 10002', "lat": 40.72235, "lng": -73.99284},
+    'The Morgan Library & Museum': {"address": '225 Madison Ave, New York, NY 10016', "lat": 40.74927, "lng": -73.98147},
+    'Noguchi Museum': {"address": '9-01 33rd Rd, Long Island City, NY 11106', "lat": 40.76699, "lng": -73.93761},
+    'Asia Society': {"address": '725 Park Ave, New York, NY 10021', "lat": 40.76984, "lng": -73.96429},
+    'Museum of the Moving Image': {"address": '36-01 35th Ave, Astoria, NY 11106', "lat": 40.75619, "lng": -73.92401},
+    'Dia Chelsea': {"address": '537 W 22nd St, New York, NY 10011', "lat": 40.74784, "lng": -74.0063},
+    'Leslie-Lohman Museum': {"address": '26 Wooster St, New York, NY 10013', "lat": 40.72177, "lng": -74.00303},
+    'Poster House': {"address": '119 W 23rd St, New York, NY 10011', "lat": 40.74359, "lng": -73.99334},
+}
 
 CHECK_PER_GALLERY = 10  # exhibition pages looked at per gallery, newest first
 
@@ -464,22 +515,36 @@ def _age_hours(stamp):
     return (datetime.now() - datetime.fromisoformat(stamp)).total_seconds() / 3600
 
 
+READERS = 8  # venues read at once; each one's own pages are still read one by one
+
+
+def _read_venue(gallery):
+    """(shows, report line); shows is None when the read failed."""
+    try:
+        found = read_gallery(gallery)
+        return found, len(found)
+    except PermissionError:
+        return None, "not allowed by robots.txt"
+    except Exception as error:  # one gallery failing must not stop the rest
+        return None, f"error: {str(error)[:80]}"
+
+
 def refresh(force=False):
     if force or _age_hours(_state["checked"]) >= REFRESH_HOURS:
-        shows, report = [], {}
-        for gallery in GALLERIES + MUSEUMS:
-            try:
-                found = read_gallery(gallery)
-                report[gallery["name"]] = len(found)
-                shows += found
-            except PermissionError:
-                report[gallery["name"]] = "not allowed by robots.txt"
-            except Exception as error:  # one gallery failing must not stop the rest
-                report[gallery["name"]] = f"error: {str(error)[:80]}"
-            time.sleep(PAUSE)
+        venues = GALLERIES + MUSEUMS
+        with ThreadPoolExecutor(max_workers=READERS) as pool:
+            results = list(pool.map(_read_venue, venues))
         with _lock:
-            if shows:
-                _state["shows"] = shows
+            previous = _state["shows"]
+            shows, report = [], {}
+            for gallery, (found, note) in zip(venues, results):
+                report[gallery["name"]] = note
+                if not found:
+                    # A failed or empty read keeps what was found last time, so
+                    # one slow website does not empty its listing for hours.
+                    found = [show for show in previous if show.get("venue") == gallery["name"]]
+                shows += found
+            _state["shows"] = shows
             _state["checked"] = datetime.now().isoformat(timespec="seconds")
             _state["report"] = report
             _save()

@@ -1,0 +1,545 @@
+/* White Board: a mood board. The page keeps the site's black-and-white
+   brutalist frame; the board itself is a white sheet with a faint dot grid. */
+
+body.wb {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  height: 100dvh;
+  overflow: hidden;
+}
+
+/* Board and cart side by side */
+.wb-stage {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 0;
+}
+
+body.has-cart .wb-stage {
+  grid-template-columns: minmax(0, 1fr) clamp(240px, 22vw, 320px);
+}
+
+.wb-saved {
+  color: var(--mute);
+}
+
+/* Toolbar */
+.wb-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  padding: 10px var(--gutter);
+  border-bottom: var(--rule);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+}
+
+.wb-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.wb-group[hidden] {
+  display: none;
+}
+
+.wb-bar button,
+.wb-bar select,
+.wb-bar input[type='text'],
+.wb-open {
+  height: 30px;
+  padding: 0 10px;
+  border: 2px solid var(--ink);
+  border-radius: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 700 11px/1 var(--mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.wb-open {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.wb-open[hidden] {
+  display: none;
+}
+
+.wb-bar button:hover,
+.wb-bar button:focus-visible,
+.wb-open:hover {
+  background: var(--ink);
+  color: var(--paper);
+  outline: none;
+}
+
+.wb-name {
+  width: 15ch;
+  cursor: text !important;
+}
+
+.wb-pick {
+  max-width: 22ch;
+}
+
+.wb-zoom {
+  min-width: 6ch;
+}
+
+.wb-color {
+  width: 34px;
+  height: 30px;
+  padding: 2px;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  cursor: pointer;
+}
+
+.wb-color[hidden] {
+  display: none;
+}
+
+/* The selected item's actions float at the top of the board, so the toolbar never jumps. */
+.wb-stage {
+  position: relative;
+}
+
+.wb-selection {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 3;
+  padding: 6px;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  font-family: var(--mono);
+  box-shadow: 0 6px 16px rgb(0 0 0 / 0.12);
+}
+
+.wb-selection button,
+.wb-selection .wb-open {
+  height: 30px;
+  padding: 0 10px;
+  border: 2px solid var(--ink);
+  border-radius: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 700 11px/1 var(--mono);
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+
+.wb-selection button:hover,
+.wb-selection .wb-open:hover {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+[data-act='delete'],
+[data-act='delete-board'] {
+  border-color: #b00020 !important;
+  color: #b00020 !important;
+}
+
+[data-act='delete-board'] {
+  border-width: 1px !important;
+  font-weight: 400 !important;
+}
+
+[data-act='delete']:hover,
+[data-act='delete-board']:hover {
+  background: #b00020 !important;
+  color: #fff !important;
+}
+
+/* The board */
+.wb-canvas {
+  position: relative;
+  overflow: hidden;
+  background-color: #fbfbf9;
+  background-image: radial-gradient(circle, #cfcfcf 1px, transparent 1.2px);
+  background-size: 24px 24px;
+  cursor: grab;
+  touch-action: none;
+  outline: none;
+  text-transform: none;
+}
+
+.wb-canvas.is-dragging {
+  cursor: grabbing;
+}
+
+.wb-world {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+}
+
+.wb-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  gap: 10px;
+  padding: var(--gutter);
+  text-align: center;
+  pointer-events: none;
+}
+
+.wb-empty[hidden] {
+  display: none;
+}
+
+.wb-empty p {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.7;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.wb-empty p:first-child {
+  font: 700 clamp(28px, 5vw, 56px) / 1 var(--sans);
+  letter-spacing: -0.02em;
+}
+
+.wb-empty a {
+  pointer-events: auto;
+}
+
+.wb-drop {
+  position: absolute;
+  inset: 12px;
+  display: grid;
+  place-content: center;
+  border: 3px dashed var(--ink);
+  background: rgb(255 255 255 / 0.7);
+  font: 700 24px/1 var(--mono);
+  letter-spacing: 0.1em;
+  pointer-events: none;
+}
+
+.wb-drop[hidden] {
+  display: none;
+}
+
+/* Things on the board */
+.wb-item {
+  position: absolute;
+  box-sizing: border-box;
+  user-select: none;
+  cursor: move;
+}
+
+.wb-image {
+  background: #fff;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.12), 0 8px 24px rgb(0 0 0 / 0.1);
+}
+
+.wb-image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.wb-image.is-broken::before {
+  content: 'PICTURE NO LONGER AVAILABLE';
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  padding: 8px;
+  background: #eee;
+  font: 10px/1.4 var(--mono);
+  text-align: center;
+}
+
+.wb-caption {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  max-width: 100%;
+  overflow: hidden;
+  font: 10px/1.3 var(--mono);
+  letter-spacing: 0.04em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: #333;
+}
+
+.wb-note {
+  padding: 16px 16px 20px;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.14), 0 10px 22px rgb(0 0 0 / 0.1);
+}
+
+.wb-text {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font: 16px/1.35 var(--sans);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  outline: none;
+}
+
+.wb-text[contenteditable='true'] {
+  overflow: auto;
+  cursor: text;
+  user-select: text;
+}
+
+.wb-swatch {
+  display: flex;
+  align-items: flex-end;
+  padding: 0 0 8px;
+  border: 8px solid #fff;
+  border-bottom-width: 34px;
+  background: var(--swatch);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.14), 0 8px 18px rgb(0 0 0 / 0.1);
+}
+
+.wb-hex {
+  position: absolute;
+  bottom: -26px;
+  left: 0;
+  font: 700 11px/1 var(--mono);
+  letter-spacing: 0.06em;
+}
+
+/* Selection: outline, rotate handle on top, resize handle at the corner */
+.wb-item.is-selected {
+  outline: 2px solid var(--ink);
+  outline-offset: 4px;
+}
+
+.wb-rotate,
+.wb-resize {
+  position: absolute;
+  display: none;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+}
+
+.wb-item.is-selected .wb-rotate,
+.wb-item.is-selected .wb-resize {
+  display: block;
+}
+
+.wb-rotate {
+  top: -30px;
+  left: calc(50% - 7px);
+  border-radius: 50%;
+  cursor: grab;
+}
+
+.wb-rotate::after {
+  content: '';
+  position: absolute;
+  top: 12px;
+  left: 4px;
+  width: 2px;
+  height: 12px;
+  background: var(--ink);
+}
+
+.wb-resize {
+  right: -11px;
+  bottom: -11px;
+  cursor: nwse-resize;
+}
+
+.wb-swatch .wb-resize {
+  bottom: -45px;
+  right: -19px;
+}
+
+/* Cart panel */
+.wb-cart {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  min-height: 0;
+  border-left: var(--rule);
+  background: var(--paper);
+  font-family: var(--mono);
+}
+
+.wb-cart[hidden] {
+  display: none;
+}
+
+.wb-cart-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: var(--hair);
+}
+
+.wb-cart-head span {
+  font: 700 22px/1 var(--sans);
+  letter-spacing: -0.02em;
+}
+
+.wb-cart-head button {
+  padding: 5px 8px;
+  border: 2px solid var(--ink);
+  border-radius: 0;
+  background: var(--paper);
+  font: 700 10px/1 var(--mono);
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+
+.wb-cart-hint {
+  margin: 0;
+  padding: 8px 14px;
+  border-bottom: var(--hair);
+  color: var(--mute);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+}
+
+.wb-cart-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: start;
+  gap: 10px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 12px 14px 20px;
+  list-style: none;
+}
+
+.wb-cart-tile {
+  position: relative;
+  display: grid;
+  gap: 4px;
+  cursor: grab;
+}
+
+.wb-cart-tile img,
+.wb-cart-note {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  background: #f2f2f2;
+  border: 1px solid #ddd;
+}
+
+.wb-cart-note {
+  display: block;
+  overflow: hidden;
+  padding: 8px;
+  font: 11px/1.35 var(--sans);
+  white-space: pre-wrap;
+}
+
+.wb-cart-tile:hover img,
+.wb-cart-tile:hover .wb-cart-note {
+  outline: 2px solid var(--ink);
+  outline-offset: -2px;
+}
+
+.wb-cart-caption {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 9px;
+  line-height: 1.3;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.wb-cart-on {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  display: none;
+  padding: 3px 5px;
+  background: var(--ink);
+  color: var(--paper);
+  font: 700 9px/1 var(--mono);
+  letter-spacing: 0.06em;
+}
+
+.wb-cart-tile.is-used .wb-cart-on {
+  display: block;
+}
+
+.wb-cart-tile.is-used img {
+  opacity: 0.55;
+}
+
+.wb-cart-remove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 700 14px/22px var(--mono);
+  cursor: pointer;
+  opacity: 0;
+}
+
+.wb-cart-tile:hover .wb-cart-remove,
+.wb-cart-remove:focus-visible {
+  opacity: 1;
+}
+
+.wb-cart-none {
+  grid-column: 1 / -1;
+  color: var(--mute);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+@media (max-width: 700px) {
+  body.has-cart .wb-stage {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) 34dvh;
+  }
+
+  .wb-cart {
+    border-left: 0;
+    border-top: var(--rule);
+  }
+
+  .wb-cart-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .wb-bar {
+    gap: 8px;
+  }
+
+
+  .rw-top span:nth-child(2) {
+    display: none;
+  }
+
+  .wb-rotate,
+  .wb-resize {
+    width: 22px;
+    height: 22px;
+  }
+}

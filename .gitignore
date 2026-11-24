@@ -1,0 +1,4 @@
+# Secret keys stay on this computer (see Backend/.env.example).
+.env
+.env.*
+!.env.example

@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#ffffff" />
+    <title>"WHITE BOARD" – Studio</title>
+    <script type="module" crossorigin src="/assets/whiteboard-CuwWY2Op.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-B5Qt9EMX.js">
+    <link rel="modulepreload" crossorigin href="/assets/board-store-To4_ItAX.js">
+    <link rel="stylesheet" crossorigin href="/assets/board-store-kpIW8ZQu.css">
+    <link rel="stylesheet" crossorigin href="/assets/whiteboard-CgsOkXe2.css">
+  </head>
+  <body class="rw wb">
+    <header class="rw-top">
+      <a class="rw-back" href="./">← "STUDIO"</a>
+      <span>WHITE BOARD — MOOD BOARD</span>
+      <span class="rw-top-end wb-saved" aria-live="polite">SAVED IN THIS BROWSER</span>
+    </header>
+
+    <div class="wb-bar" role="toolbar" aria-label="White Board">
+      <div class="wb-group wb-boards">
+        <input class="wb-name" type="text" aria-label="Board name" spellcheck="false" maxlength="60" />
+        <select class="wb-pick" aria-label="Open a board"></select>
+        <button type="button" data-act="new-board">+ NEW</button>
+        <button type="button" data-act="delete-board" title="Delete this board">DELETE BOARD</button>
+      </div>
+      <div class="wb-group">
+        <button type="button" data-act="image">+ IMAGE</button>
+        <button type="button" data-act="note">+ NOTE</button>
+        <button type="button" data-act="swatch">+ COLOUR</button>
+        <button type="button" data-act="link">+ LINK</button>
+        <input class="wb-files" type="file" accept="image/*" multiple hidden />
+      </div>
+      <div class="wb-group">
+        <button type="button" data-act="zoom-out" aria-label="Zoom out">−</button>
+        <button type="button" data-act="zoom-reset" class="wb-zoom">100%</button>
+        <button type="button" data-act="zoom-in" aria-label="Zoom in">+</button>
+        <button type="button" data-act="fit">FIT</button>
+      </div>
+      <div class="wb-group">
+        <button type="button" data-act="cart" class="wb-cart-toggle" aria-expanded="true">CART · 00</button>
+      </div>
+    </div>
+
+    <div class="wb-stage">
+      <div class="wb-group wb-selection" role="toolbar" aria-label="Selected item" hidden>
+        <input class="wb-color" type="color" aria-label="Colour" hidden />
+        <a class="wb-open" target="_blank" rel="noopener" hidden>OPEN ↗</a>
+        <button type="button" data-act="duplicate">DUPLICATE</button>
+        <button type="button" data-act="front">TO FRONT</button>
+        <button type="button" data-act="delete">DELETE</button>
+      </div>
+    <main class="wb-canvas" tabindex="0" aria-label="Board. Drop or paste pictures here.">
+      <div class="wb-world"></div>
+      <div class="wb-empty">
+        <p>"EMPTY BOARD"</p>
+        <p>
+          DROP PICTURES HERE, PASTE THEM (⌘V), OR USE + IMAGE. ADD NOTES AND COLOURS.<br />
+          SAVE LOOKS, PIECES AND PRODUCTS FROM <a href="./runway.html">RUNWAY</a> AND WORKS FROM
+          <a href="./art-studio.html">ART STUDIO</a> WITH "+ CART", THEN DRAG THEM HERE FROM THE CART.
+        </p>
+      </div>
+      <div class="wb-drop" hidden>DROP TO PIN</div>
+    </main>
+
+    <aside class="wb-cart" aria-label="Your cart">
+      <div class="wb-cart-head">
+        <span>"CART"</span>
+        <button type="button" data-act="cart" aria-label="Hide the cart">HIDE ×</button>
+      </div>
+      <p class="wb-cart-hint">DRAG ONTO THE BOARD, OR CLICK TO ADD.</p>
+      <ul class="wb-cart-list"></ul>
+    </aside>
+    </div>
+
+  </body>
+</html>

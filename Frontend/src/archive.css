@@ -134,6 +134,69 @@ main {
   filter: grayscale(1);
 }
 
+/* White Board window: a few pictures pinned to a dotted sheet. */
+.board-cover {
+  position: relative;
+  height: calc(2 * clamp(160px, 18vw, 240px) + 2px);
+  overflow: hidden;
+  background-color: #fbfbf9;
+  background-image: radial-gradient(circle, #cfcfcf 1px, transparent 1.2px);
+  background-size: 18px 18px;
+}
+
+.board-cover img,
+.board-note,
+.board-chip {
+  position: absolute;
+  box-shadow: 0 1px 2px #0000001f, 0 8px 20px #0000001a;
+}
+
+.board-cover img {
+  width: 26%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  background: #fff;
+}
+
+.board-cover img:nth-child(1) {
+  top: 12%;
+  left: 8%;
+  transform: rotate(-4deg);
+}
+
+.board-cover img:nth-child(2) {
+  top: 22%;
+  left: 37%;
+  transform: rotate(2deg);
+  filter: grayscale(1);
+}
+
+.board-cover img:nth-child(4) {
+  top: 8%;
+  left: 66%;
+  transform: rotate(5deg);
+}
+
+.board-note {
+  bottom: 12%;
+  left: 14%;
+  padding: 14px 18px;
+  background: #fff6a8;
+  font: 700 15px/1 Arial, Helvetica, sans-serif;
+  transform: rotate(-2deg);
+}
+
+.board-chip {
+  right: 10%;
+  bottom: 10%;
+  width: 11%;
+  aspect-ratio: 4 / 5;
+  border: 6px solid #fff;
+  border-bottom-width: 18px;
+  background: #c8102e;
+  transform: rotate(3deg);
+}
+
 @media (max-width: 700px) {
   .masthead {
     padding: 18px 20px 0;
@@ -175,6 +238,10 @@ main {
   .image-grid img {
     height: clamp(72px, calc((100svh - 260px) / 4), 130px);
     min-height: 0;
+  }
+
+  .board-cover {
+    height: calc(2 * clamp(72px, calc((100svh - 260px) / 4), 130px) + 2px);
   }
 }
 
