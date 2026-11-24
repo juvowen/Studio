@@ -1,4 +1,5 @@
 import { listCart, removeFromCart } from './board-store.js'
+import { askToSignIn, onAuth, signOut, signedIn, userEmail } from './auth.js'
 
 // The cart on Runway and Art Studio: a "CART · 03" button in the corner that
 // opens a drawer of everything saved with "+ CART", ready to pull onto the
@@ -19,11 +20,16 @@ drawer.innerHTML = `
 	</div>
 	<p class="cart-hint">SAVED FROM RUNWAY AND ART STUDIO. PULL THEM ONTO A MOOD BOARD.</p>
 	<ul class="cart-list"></ul>
+	<p class="cart-account"><span></span> <button type="button" class="cart-signout">SIGN OUT</button></p>
 	<a class="cart-go" href="./whiteboard.html">OPEN WHITE BOARD →</a>`
 const list = drawer.querySelector('.cart-list')
 
 document.body.append(pill, drawer)
-pill.addEventListener('click', () => drawer.showModal())
+pill.addEventListener('click', () => (signedIn() ? drawer.showModal() : askToSignIn('SIGN IN TO USE YOUR CART AND THE WHITE BOARD.')))
+drawer.querySelector('.cart-signout').addEventListener('click', async () => {
+	await signOut()
+	drawer.close()
+})
 drawer.querySelector('.cart-close').addEventListener('click', () => drawer.close())
 drawer.addEventListener('click', (event) => event.target === drawer && drawer.close()) // the dimmed side
 
@@ -58,6 +64,12 @@ function row(entry) {
 }
 
 async function refresh() {
+	if (!signedIn()) {
+		pill.textContent = 'CART · SIGN IN'
+		pill.classList.add('is-empty')
+		return
+	}
+	drawer.querySelector('.cart-account span').textContent = `SIGNED IN AS ${userEmail().toUpperCase()}`
 	let cart = []
 	try {
 		cart = await listCart()
@@ -75,4 +87,4 @@ async function refresh() {
 
 addEventListener('studio-cart', refresh)
 addEventListener('focus', refresh)
-refresh()
+onAuth(refresh)

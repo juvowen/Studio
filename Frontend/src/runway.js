@@ -3,6 +3,7 @@ import './music.js'
 import { openPieces, setUpPieces } from './lookalikes.js'
 import { cartButton } from './board-store.js'
 import './cart.js'
+import { accountLink } from './auth.js'
 
 // Opens on this show when someone clicks the Runway window.
 const DEFAULT = { designer: 'OFF-WHITE', show: 'Fall 2020 Ready-to-Wear' }
@@ -159,6 +160,7 @@ async function loadShow() {
 	const show = showSelect.value
 	seasonLabel.textContent = show
 	status('LOADING LOOKS', true)
+	const reopen = Number(new URLSearchParams(location.search).get('look')) // e.g. back from signing in
 	history.replaceState(null, '', `?${new URLSearchParams({ designer, line: lineSelect.value, show })}`)
 	let images
 	try {
@@ -201,6 +203,7 @@ async function loadShow() {
 			return look
 		}),
 	)
+	if (reopen >= 1 && reopen <= images.length) grid.querySelectorAll('.rw-look-open')[reopen - 1].click()
 }
 
 // The show's page on Vogue Runway, built the same way the scraper builds it.
@@ -215,6 +218,9 @@ let viewerLook = null // what "+ CART" saves from the viewer
 viewer.querySelector('.rw-view-actions').prepend(cartButton(() => viewerLook))
 
 function openViewer(src, fullSrc, index, total, show) {
+	const address = new URL(location.href)
+	address.searchParams.set('look', index + 1)
+	history.replaceState(null, '', address)
 	viewerLook = {
 		src: fullSrc,
 		caption: `${designer} — ${show} — LOOK ${pad(index + 1)}`,
@@ -240,6 +246,11 @@ function openViewer(src, fullSrc, index, total, show) {
 }
 
 viewer.querySelector('.art-view-close').addEventListener('click', () => viewer.close())
+viewer.addEventListener('close', () => {
+	const address = new URL(location.href)
+	address.searchParams.delete('look')
+	history.replaceState(null, '', address)
+})
 setUpPieces(viewer)
 // Clicking anywhere except the links, the pieces and their panel closes it.
 viewer.addEventListener('click', (event) => {
@@ -421,3 +432,6 @@ api('designers')
 		if (!brandList.hidden) openBrands(designerSelect.value === designer ? '' : designerSelect.value)
 	})
 	.catch(() => {})
+
+// SIGN IN / SIGN OUT in the top bar.
+document.querySelector('.rw-top-end').prepend(accountLink())

@@ -18,6 +18,7 @@ import {
 	saveFile,
 	setCurrent,
 } from './board-store.js'
+import { accountLink, askToSignIn, onAuth } from './auth.js'
 
 // White Board: a mood board for the idea phase. Pictures, notes and colour
 // swatches on a free canvas; drag to move, corner to resize, top handle to
@@ -698,11 +699,27 @@ addEventListener('focus', refreshCart)
 		open = localStorage.getItem(CART_OPEN) !== '0'
 	} catch {}
 	showCart(open)
-	refreshCart()
 }
 
 function updateEmpty() {
 	empty.hidden = Boolean(board?.items.length)
 }
 
-open(new URLSearchParams(location.search).get('board'))
+// ---- Signed in only ----------------------------------------------------------------------
+const gate = document.querySelector('.wb-gate')
+const GATE_WHY = 'SIGN IN TO USE THE WHITE BOARD AND YOUR CART.'
+gate.querySelector('.wb-gate-sign').addEventListener('click', () => askToSignIn(GATE_WHY))
+document.querySelector('.rw-top-end').append(' ', accountLink())
+
+let started = null // the account the board was opened for
+onAuth((session) => {
+	const account = session?.user.id ?? null
+	if (started && account !== started) return location.reload() // signed out, or someone else signed in
+	document.body.classList.toggle('is-gated', !account)
+	gate.hidden = Boolean(account)
+	if (!account) return
+	if (started) return
+	started = account
+	refreshCart()
+	open(new URLSearchParams(location.search).get('board'))
+})

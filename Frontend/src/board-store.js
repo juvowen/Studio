@@ -10,14 +10,24 @@
 //            src (a picture address) or file (an uploaded picture's id),
 //            text, color, caption, link }
 
-const DB = 'studio-whiteboard'
+import { askToSignIn, onAuth, signedIn, userId } from './auth.js'
+
+// Each account gets its own boards and cart in this browser.
+const dbName = () => `studio-whiteboard-${userId()}`
+onAuth(() => {
+	opening?.then((database) => database.close()).catch(() => {})
+	opening = null
+	dispatchEvent(new Event('studio-cart'))
+})
 const CURRENT = 'whiteboard-current' // the board last worked on
 const channel = 'BroadcastChannel' in window ? new BroadcastChannel('studio-whiteboard') : null
 
 let opening
 function db() {
+	if (!userId()) return Promise.reject(new Error('Signed out'))
 	opening ??= new Promise((resolve, reject) => {
-		const request = indexedDB.open(DB, 2)
+		if (!userId()) return reject(new Error('Signed out'))
+		const request = indexedDB.open(dbName(), 2)
 		request.onupgradeneeded = () => {
 			const stores = request.result.objectStoreNames
 			if (!stores.contains('boards')) request.result.createObjectStore('boards', { keyPath: 'id' })
@@ -212,6 +222,7 @@ export function cartButton(item, { className = 'wb-add', label = '+ CART' } = {}
 	button.addEventListener('click', async (event) => {
 		event.preventDefault()
 		event.stopPropagation()
+		if (!signedIn()) return askToSignIn('SIGN IN TO SAVE THINGS TO YOUR CART AND USE THE WHITE BOARD.')
 		button.disabled = true
 		try {
 			const { count, already } = await addToCart(item())

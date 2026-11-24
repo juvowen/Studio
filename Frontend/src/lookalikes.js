@@ -6,6 +6,9 @@
 // and LOOKALIKES from other brands.
 
 import { cartButton } from './board-store.js'
+import { askToSignIn, authHeaders, onAuth, signedIn } from './auth.js'
+
+const SIGN_IN_WHY = 'SIGN IN TO FIND THE PIECES IN A LOOK AND SHOP THEM.'
 
 const piecesFor = new Map() // picture -> request for its pieces
 const productsFor = new Map() // picture + piece -> request for its products
@@ -31,8 +34,12 @@ function link(text, href, className) {
 }
 
 async function getJSON(path, params) {
-	const response = await fetch(`${path}?${new URLSearchParams(params)}`)
+	const response = await fetch(`${path}?${new URLSearchParams(params)}`, { headers: authHeaders() })
 	const data = await response.json().catch(() => ({}))
+	if (response.status === 401) {
+		askToSignIn(SIGN_IN_WHY)
+		throw new Error('Sign in to find pieces.')
+	}
 	if (!response.ok) throw new Error(data.error || 'Gemini could not be reached.')
 	return data
 }
@@ -62,8 +69,16 @@ export function setUpPieces(dialog) {
 	image.addEventListener('load', placeLayer)
 	new ResizeObserver(placeLayer).observe(frame)
 	button.addEventListener('click', () => {
-		if (state.pieces.length) viewer.classList.toggle('hide-pieces')
+		if (!signedIn()) askToSignIn(SIGN_IN_WHY)
+		else if (state.pieces.length) viewer.classList.toggle('hide-pieces')
 		else if (!button.disabled) findPieces()
+	})
+	// Signing in (or out) while a look is open.
+	onAuth(() => {
+		if (!state.src) return
+		if (signedIn()) {
+			if (!state.pieces.length) findPieces()
+		} else openPieces(state.src, state.designer, state.show)
 	})
 }
 
@@ -73,7 +88,10 @@ export function openPieces(src, designer, show) {
 	viewer.classList.remove('has-looks', 'hide-pieces')
 	panel.replaceChildren()
 	layer.replaceChildren()
-	findPieces()
+	if (signedIn()) return findPieces()
+	button.disabled = false
+	button.classList.remove('is-loading')
+	button.textContent = 'SIGN IN TO FIND PIECES ◎'
 }
 
 async function findPieces() {

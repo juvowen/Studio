@@ -173,12 +173,15 @@ def _picture(image_url):
     return response.content
 
 
-def pieces(image_url, designer="", show=""):
-    """The pieces in a look, each with a box (0-1000, [top, left, bottom, right])."""
+def pieces(image_url, designer="", show="", cached_only=False):
+    """The pieces in a look, each with a box (0-1000, [top, left, bottom, right]).
+    With cached_only, only pieces already found ([] otherwise; Gemini is not asked)."""
     key = f"pieces\n{image_url}"
     with _lock:
         if key in _saved:
             return _saved[key]
+    if cached_only:
+        return []
     picture = _picture(image_url)
     prompt = (
         f"This is a runway look ({designer}, {show}). Find each distinct clothing piece, shoe, bag and accessory "

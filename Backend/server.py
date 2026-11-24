@@ -10,7 +10,7 @@ Nothing is downloaded ahead of time; pictures load straight from Vogue.
   GET /api/shows?designer=OFF-WHITE       that brand's shows, newest first
   GET /api/show?designer=OFF-WHITE&show=Fall 2020 Ready-to-Wear
                                           picture addresses for one show
-  GET /api/pieces?image=<vogue picture>&designer=…&show=…
+  GET /api/pieces?image=<vogue picture>&designer=…&show=…   (signed in: Authorization header)
                                           the pieces in a runway look, with boxes (Gemini)
   GET /api/piece/shop?image=…&piece=2     the original and lookalikes for one piece
   GET /api/piece/image?image=…&piece=2    just that piece, cropped (JPEG)
@@ -517,6 +517,43 @@ def nyc_event_types():
     return [{**kind, "events": len(events_of(kind["id"]))} for kind in types]
 
 
+# ---- Sign-in (Supabase) -----------------------------------------------------------
+# Piece lookups (Gemini and SerpApi, which cost money) are for signed-in people
+# only. The page sends its Supabase session; Supabase says whether it is real.
+# SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY come from Backend/.env (or the host's
+# environment); read when asked, since .env is loaded when the server starts.
+_signed_in = {}  # session token -> (account id, checked at)
+_signed_in_lock = threading.Lock()
+
+
+def account_of(header):
+    """The Supabase account behind an "Authorization: Bearer …" header, or None."""
+    token = header[7:].strip() if header and header.lower().startswith("bearer ") else ""
+    supabase_url = os.environ.get("SUPABASE_URL", "").rstrip("/")
+    supabase_key = os.environ.get("SUPABASE_PUBLISHABLE_KEY", "")
+    if not token or not (supabase_url and supabase_key):  # no Supabase settings: nobody is signed in
+        return None
+    with _signed_in_lock:
+        known = _signed_in.get(token)
+    if known and time.time() - known[1] < 300:  # asked within 5 minutes
+        return known[0]
+    try:
+        response = requests.get(
+            f"{supabase_url}/auth/v1/user",
+            headers={"apikey": supabase_key, "Authorization": f"Bearer {token}"},
+            timeout=10,
+        )
+    except requests.RequestException:
+        return None
+    account = response.json().get("id") if response.ok else None
+    with _signed_in_lock:
+        if len(_signed_in) > 5000:
+            _signed_in.clear()
+        if account:
+            _signed_in[token] = (account, time.time())
+    return account
+
+
 class Handler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(DIST), **kwargs)
@@ -579,6 +616,15 @@ class Handler(SimpleHTTPRequestHandler):
             return self.send_json({"error": "Add GEMINI_API_KEY to Backend/.env to find pieces."}, 503)
         image = query["image"]
         piece = int(query["piece"]) if query.get("piece", "").isdigit() else None
+        # The cropped picture of a piece already found stays open (the White Board
+        # and Google Lens load it as a plain picture); it never starts a lookup.
+        if path == "/api/piece/image":
+            found = lookalikes.pieces(image, cached_only=True)
+            if piece is None or piece >= len(found):
+                return self.send_json({"error": "Unknown piece."}, 404)
+            return self.send_image(lookalikes.crop(image, found[piece]["box"]), "image/jpeg")
+        if not account_of(self.headers.get("Authorization")):
+            return self.send_json({"error": "Sign in to find pieces."}, 401)
         try:
             if path == "/api/pieces":
                 return self.send_json(lookalikes.pieces(image, query.get("designer", ""), query.get("show", "")))
@@ -645,6 +691,8 @@ def warm_up():
 
 if __name__ == "__main__":
     threading.Thread(target=warm_up, daemon=True).start()
-    galleries.start_background_refresh()
+    galleries.start_background_refresh()  # also loads Backend/.env
+    if not (os.environ.get("SUPABASE_URL") and os.environ.get("SUPABASE_PUBLISHABLE_KEY")):
+        print("No SUPABASE_URL / SUPABASE_PUBLISHABLE_KEY: nobody can sign in, so piece lookups are off.", flush=True)
     print(f"Studio runway server on http://localhost:{PORT}", flush=True)
     Server(("::", PORT), Handler).serve_forever()

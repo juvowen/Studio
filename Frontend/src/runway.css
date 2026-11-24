@@ -1505,3 +1505,122 @@ body:has(.art-view[open]) {
 .cart-go:hover {
   background: #333;
 }
+
+/* Account link in the top bars: SIGN IN, or EMAIL · SIGN OUT */
+.acct {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: 14px;
+}
+
+.acct-in {
+  padding: 3px 8px;
+  background: var(--ink);
+  color: var(--paper) !important;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.acct-in:hover {
+  outline: 2px solid var(--ink);
+  outline-offset: 1px;
+}
+
+.acct-email {
+  max-width: 24ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.acct-out {
+  padding: 3px 8px;
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 700 10px/1 var(--mono);
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+
+.acct-out:hover {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+@media (max-width: 700px) {
+  .acct-email {
+    display: none;
+  }
+}
+
+.cart-account {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 20px;
+  border-top: var(--hair);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}
+
+.cart-signout,
+.wb-signout {
+  padding: 4px 8px;
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 700 10px/1 var(--mono);
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+
+/* White Board before signing in */
+.wb-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 4;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 18px;
+  padding: var(--gutter);
+  background: #fbfbf9 radial-gradient(circle, #cfcfcf 1px, transparent 1.2px) 0 0 / 24px 24px;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.6;
+  letter-spacing: 0.06em;
+  text-align: center;
+}
+
+.wb-gate[hidden] {
+  display: none;
+}
+
+.wb-gate p {
+  max-width: 52ch;
+  margin: 0;
+}
+
+.wb-gate-title {
+  font: 700 clamp(40px, 8vw, 96px) / 0.95 var(--sans) !important;
+  letter-spacing: -0.03em !important;
+}
+
+.wb-gate-sign {
+  min-height: 48px;
+  padding: 0 22px;
+  border: 0;
+  border-radius: 0;
+  background: var(--ink);
+  color: var(--paper);
+  font: 700 12px/1 var(--mono);
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}

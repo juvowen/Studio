@@ -3,6 +3,7 @@ import './music.js'
 import { showMuseums, hideMuseums } from './museums.js'
 import { cartButton } from './board-store.js'
 import './cart.js'
+import { accountLink } from './auth.js'
 
 // Artworks come from the Art Institute of Chicago's public collection,
 // looked up by the backend (Backend/server.py, /api/art/...), which also
@@ -644,3 +645,6 @@ api('artists')
 		artistsFailed = true
 		if (document.activeElement === artistInput) openArtists()
 	})
+
+// SIGN IN / SIGN OUT in the top bar.
+document.querySelector('.rw-top-end').prepend(accountLink())

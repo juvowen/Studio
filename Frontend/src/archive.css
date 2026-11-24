@@ -20,7 +20,46 @@ body {
 }
 
 .masthead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
   padding: 18px 4.2vw 0;
+}
+
+/* SIGN IN / SIGN OUT on the front page */
+.masthead .acct {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font: 600 13px/1 Arial, Helvetica, sans-serif;
+}
+
+.masthead .acct-in,
+.masthead .acct-out {
+  padding: 8px 14px;
+  border: 1px solid var(--blue);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--blue);
+  font: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.masthead .acct-in {
+  background: var(--blue);
+  color: #fff;
+}
+
+.masthead .acct-email {
+  color: #555;
+}
+
+@media (max-width: 700px) {
+  .masthead .acct-email {
+    display: none;
+  }
 }
 
 .wordmark {

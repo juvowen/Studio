@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#ffffff" />
+    <title>"SIGN IN" – Studio</title>
+    <script type="module" crossorigin src="/assets/login-tgxxRdAe.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/auth-lJ3NaSjL.js">
+    <link rel="stylesheet" crossorigin href="/assets/login-DpsQ18r9.css">
+    <link rel="stylesheet" crossorigin href="/assets/runway-ngR1FHjr.css">
+  </head>
+  <body class="rw lg">
+    <header class="rw-top">
+      <a class="rw-back" href="./">← "STUDIO"</a>
+      <span>ACCOUNT</span>
+      <span class="rw-top-end"></span>
+    </header>
+
+    <main class="lg-main">
+      <section class="lg-intro">
+        <h1 class="lg-title">"STUDIO"</h1>
+        <p class="lg-why"></p>
+        <ul class="lg-perks">
+          <li><b>01</b> FIND THE PIECES IN ANY RUNWAY LOOK — THE ORIGINAL AND LOOKALIKES, WITH PRICES</li>
+          <li><b>02</b> SAVE LOOKS, PIECES, PRODUCTS AND ARTWORKS TO YOUR CART</li>
+          <li><b>03</b> BUILD MOOD BOARDS ON THE WHITE BOARD</li>
+        </ul>
+      </section>
+
+      <section class="lg-card" aria-label="Sign in or create an account">
+        <div class="lg-tabs" role="tablist">
+          <button type="button" role="tab" class="lg-tab" data-mode="signin" aria-selected="true">SIGN IN</button>
+          <button type="button" role="tab" class="lg-tab" data-mode="signup" aria-selected="false">CREATE ACCOUNT</button>
+        </div>
+
+        <form class="lg-form" novalidate>
+          <label class="lg-field">
+            <span>EMAIL</span>
+            <input name="email" type="email" autocomplete="email" required spellcheck="false" />
+          </label>
+          <label class="lg-field">
+            <span>PASSWORD</span>
+            <span class="lg-password">
+              <input name="password" type="password" autocomplete="current-password" required minlength="8" />
+              <button type="button" class="lg-show" aria-label="Show password">SHOW</button>
+            </span>
+          </label>
+          <label class="lg-field lg-signup-only" hidden>
+            <span>CONFIRM PASSWORD</span>
+            <input name="confirm" type="password" autocomplete="new-password" minlength="8" />
+          </label>
+          <p class="lg-hint lg-signup-only" hidden>AT LEAST 8 CHARACTERS.</p>
+          <p class="lg-error" role="alert"></p>
+          <button type="submit" class="lg-submit">SIGN IN</button>
+        </form>
+
+        <p class="lg-switch"></p>
+      </section>
+
+      <section class="lg-card lg-signed" hidden aria-live="polite">
+        <p class="lg-signed-title">"SIGNED IN"</p>
+        <p class="lg-signed-email"></p>
+        <a class="lg-submit lg-continue" href="./">CONTINUE →</a>
+        <button type="button" class="lg-signout">SIGN OUT</button>
+      </section>
+    </main>
+
+  </body>
+</html>
